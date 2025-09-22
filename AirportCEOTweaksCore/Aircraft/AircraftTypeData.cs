@@ -99,6 +99,8 @@ namespace AirportCEOTweaksCore
 			data.loud = ArrayReducer(loud, tryIndex);
 			data.quiet = ArrayReducer(quiet, tryIndex);
 
+			data.isGeneralAviation = ArrayReducer(isGeneralAviation, tryIndex);
+
 			//Debug.Log("SingleAircraftTypeData: last");
 			return data;
 		}
@@ -217,6 +219,8 @@ namespace AirportCEOTweaksCore
 		public bool[] loud;
 		public bool[] quiet;
 
+		public bool[] isGeneralAviation;
+
 		public string Id
 		{
 			get
@@ -266,7 +270,10 @@ namespace AirportCEOTweaksCore
 		public bool   Cargo					   { get { return 	cargo				[0]; }}
 		public bool   Loud					   { get { return 	loud				[0]; }}
 		public bool   Quiet					   { get { return 	quiet				[0]; }}
-	}
+
+		public bool IsGeneralAviation		   { get { return   isGeneralAviation [0]; }}
+
+    }
 
 	public static class AircraftTypeDataUtilities
     {
