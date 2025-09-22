@@ -29,6 +29,13 @@ internal static class GeneralAviationManager
         {
             instance.GAAircraft.aircraft = RemoveGAAircraft(planeName);
         }
+
+        var ga = instance.GAAircraft.aircraft;
+        AirportCEOAircraft.TweaksLogger.LogMessage($"Folowing aircrafts are GA's");
+        for (int j = 0; j < ga.Length; j++)
+        {
+            AirportCEOAircraft.TweaksLogger.LogMessage($"Loading: {ga[j]}");
+        }
     }
 
     private static string[] AddGAAircraft(string newPlane)

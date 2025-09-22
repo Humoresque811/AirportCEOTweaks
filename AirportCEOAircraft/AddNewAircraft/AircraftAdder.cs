@@ -56,6 +56,9 @@ namespace AirportCEOAircraft
                     {
                         AirportCEOAircraft.aircraftTypeDataDict.Add(aircraftTypeData.id[i], aircraftTypeData);
                     }
+
+                    GeneralAviationManager.HandleGeneralAviation(i, aircraftTypeData);
+
                 }
                 yield return null;
                 Singleton<SceneMessagePanelUI>.Instance.SetLoadingText("Tweaks Aircraft | Loading:   " + aircraftTypeData.DisplayName, ((processedAircraftCount*100f)/(float)aircraftTypeList.Count).RoundToIntLikeANormalPerson().Clamp(5, 100));
