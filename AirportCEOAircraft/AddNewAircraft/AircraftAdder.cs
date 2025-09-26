@@ -166,7 +166,8 @@ namespace AirportCEOAircraft
             newAircraftModel.maxPax = aircraftTypeData.capacity_PAX.Length > index ? aircraftTypeData.capacity_PAX[index] : aircraftTypeData.capacity_PAX[0];
             newAircraftModel.seatRows = aircraftTypeData.seatsAbreast.Length > index ? aircraftTypeData.seatsAbreast[index] : aircraftTypeData.seatsAbreast[0];
 
-            newAircraftModel.isHelicopter = aircraftTypeData.helicopter;
+            //TODO check if this fixes the error that helicopter can't spawn
+            //newAircraftModel.isHelicopter = aircraftTypeData.helicopter;
 
             //Debug.Log("ACEO Tweaks | Log: Aircraft Adder MakeAircraftGameObject Model Block End");
 
