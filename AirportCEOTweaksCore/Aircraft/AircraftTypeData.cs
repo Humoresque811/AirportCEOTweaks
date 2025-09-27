@@ -48,7 +48,8 @@ namespace AirportCEOTweaksCore
 			data.size = this.size;
 			data.threeStepSize = this.threeStepSize;
 
-			data.helicopter = this.helicopter;
+			// TODO uncomment when working on helicopters
+			//data.helicopter = this.helicopter;
 
 			//Debug.Log("SingleAircraftTypeData: fixxeds done");
 			data.displayName = ArrayReducer(displayName, tryIndex);
@@ -173,9 +174,10 @@ namespace AirportCEOTweaksCore
 		public Enums.GenericSize size;
 		public Enums.ThreeStepScale threeStepSize;
 
-		public bool helicopter;
+        // TODO uncomment when working on helicopters
+        //public bool helicopter;
 
-		public string[] displayName;
+        public string[] displayName;
 		public string[] iCAOCode;
 		public string[] manufacturer;
 

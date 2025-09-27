@@ -29,7 +29,8 @@ namespace AirportCEOAircraft
             foreach (AircraftTypeData aircraftTypeData in aircraftTypeList)
             {
                 // Ex: "Now loading helicopter H130"
-                AirportCEOAircraft.TweaksLogger.LogInfo($"Now loading {(aircraftTypeData.helicopter ? helicopterText : aircraftText)} {aircraftTypeData.Id}");
+                // TODO uncomment when working on helicopters
+                //AirportCEOAircraft.TweaksLogger.LogInfo($"Now loading {(aircraftTypeData.helicopter ? helicopterText : aircraftText)} {aircraftTypeData.Id}");
 
                 for (int i = 0; i < aircraftTypeData.id.Length; i++)
                 {
@@ -166,7 +167,7 @@ namespace AirportCEOAircraft
             newAircraftModel.maxPax = aircraftTypeData.capacity_PAX.Length > index ? aircraftTypeData.capacity_PAX[index] : aircraftTypeData.capacity_PAX[0];
             newAircraftModel.seatRows = aircraftTypeData.seatsAbreast.Length > index ? aircraftTypeData.seatsAbreast[index] : aircraftTypeData.seatsAbreast[0];
 
-            //TODO check if this fixes the error that helicopter can't spawn
+            // TODO uncomment when working on helicopters
             //newAircraftModel.isHelicopter = aircraftTypeData.helicopter;
 
             //Debug.Log("ACEO Tweaks | Log: Aircraft Adder MakeAircraftGameObject Model Block End");
