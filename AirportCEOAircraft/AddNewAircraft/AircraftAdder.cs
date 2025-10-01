@@ -64,6 +64,13 @@ namespace AirportCEOAircraft
             }
 
 
+            var ga = atc.GAAircraft.aircraft;
+            AirportCEOAircraft.TweaksLogger.LogMessage($"Folowing aircrafts are GA's");
+            for (int j = 0; j < ga.Length; j++)
+            {
+                AirportCEOAircraft.TweaksLogger.LogMessage($"Loading: {ga[j]}");
+            }
+
             aircraftGameObjectsSet.UnionWith(atc.aircraftPrefabs);
             aircraftGameObjectsSet.ExceptWith(AirportCEOAircraft.aircraftPrefabOverwrites.Keys);
             atc.aircraftPrefabs = aircraftGameObjectsSet.ToArray();
