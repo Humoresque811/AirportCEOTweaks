@@ -10,8 +10,6 @@ namespace AirportCEOAircraft
 	static class Patch_GameControllerToAddNewPrefabs
 	{
 		private static AircraftAdder adder;
-		private static int iteration = 0;
-		private static IEnumerator item;
 
 		[HarmonyPostfix]
 		[HarmonyPatch("Awake")]

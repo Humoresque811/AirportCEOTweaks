@@ -5,7 +5,7 @@
     <AssemblyName>AirportCEOTweaksCore</AssemblyName>
 	<Product>AirportCEOTweaksCore</Product>
     <Description></Description>
-	<Version>3.1.0.2</Version>
+	<Version>3.1.0.3</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <RestoreAdditionalProjectSources>
@@ -69,4 +69,9 @@
   </ItemGroup>
 
   <ProjectExtensions><VisualStudio><UserProperties BuildVersion_AssemblyInfoFilename="AssemblyInfo.cs" BuildVersion_StartDate="2000/1/1" BuildVersion_UseGlobalSettings="True" /></VisualStudio></ProjectExtensions>
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Copy SourceFiles="$(TargetDir)\$(TargetName).dll" DestinationFolder="C:\Program Files (x86)\Steam\steamapps\common\Airport CEO\BepInEx\plugins" />
+		<Copy SourceFiles="$(TargetDir)\$(TargetName).pdb" DestinationFolder="C:\Program Files (x86)\Steam\steamapps\common\Airport CEO\BepInEx\plugins" />
+	</Target>
 </Project>

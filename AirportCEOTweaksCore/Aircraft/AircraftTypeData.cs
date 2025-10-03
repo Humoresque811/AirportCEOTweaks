@@ -48,7 +48,8 @@ namespace AirportCEOTweaksCore
 			data.size = this.size;
 			data.threeStepSize = this.threeStepSize;
 
-			data.helicopter = this.helicopter;
+			// TODO uncomment when working on helicopters
+			//data.helicopter = this.helicopter;
 
 			//Debug.Log("SingleAircraftTypeData: fixxeds done");
 			data.displayName = ArrayReducer(displayName, tryIndex);
@@ -98,6 +99,8 @@ namespace AirportCEOTweaksCore
 
 			data.loud = ArrayReducer(loud, tryIndex);
 			data.quiet = ArrayReducer(quiet, tryIndex);
+
+			data.isGeneralAviation = ArrayReducer(isGeneralAviation, tryIndex);
 
 			//Debug.Log("SingleAircraftTypeData: last");
 			return data;
@@ -171,9 +174,10 @@ namespace AirportCEOTweaksCore
 		public Enums.GenericSize size;
 		public Enums.ThreeStepScale threeStepSize;
 
-		public bool helicopter;
+        // TODO uncomment when working on helicopters
+        //public bool helicopter;
 
-		public string[] displayName;
+        public string[] displayName;
 		public string[] iCAOCode;
 		public string[] manufacturer;
 
@@ -216,6 +220,8 @@ namespace AirportCEOTweaksCore
 
 		public bool[] loud;
 		public bool[] quiet;
+
+		public bool[] isGeneralAviation;
 
 		public string Id
 		{
@@ -266,7 +272,10 @@ namespace AirportCEOTweaksCore
 		public bool   Cargo					   { get { return 	cargo				[0]; }}
 		public bool   Loud					   { get { return 	loud				[0]; }}
 		public bool   Quiet					   { get { return 	quiet				[0]; }}
-	}
+
+		public bool IsGeneralAviation		   { get { return   isGeneralAviation [0]; }}
+
+    }
 
 	public static class AircraftTypeDataUtilities
     {
