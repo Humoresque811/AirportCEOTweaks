@@ -83,11 +83,11 @@ namespace AirportCEONationality
         {
             if (debug)
             {
-                if (!fleetMember.AvailableByDLC()) { Debug.Log("ACEO Tweaks | Info: " + fleetMember.AircraftString + " not available by DLC"); }
-                if (!fleetMember.CanOperateFromOtherAirportSize(route.Airport.paxSize, route.Airport.cargoSize)) { Debug.Log("ACEO Tweaks | Info: " + fleetMember.AircraftString + " cannot operate from " + route.Airport.airportName + " ["+ route.Airport.airportIATACode + "]"); }
-                if (!fleetMember.CanFlyDistance(route.Distance.RoundToIntLikeANormalPerson())) { Debug.Log("ACEO Tweaks | Info: " + fleetMember.AircraftString + " cannot fly distance " + route.Distance + "km (do you have refueling available?)"); }
+                if (!fleetMember.AvailableByDLC()) { Debug.Log("ACEO Tweaks | Info: " + fleetMember.AircraftName + " not available by DLC"); }
+                if (!fleetMember.CanOperateFromOtherAirportSize(route.Airport.paxSize, route.Airport.cargoSize)) { Debug.Log("ACEO Tweaks | Info: " + fleetMember.AircraftName + " cannot operate from " + route.Airport.airportName + " ["+ route.Airport.airportIATACode + "]"); }
+                if (!fleetMember.CanFlyDistance(route.Distance.RoundToIntLikeANormalPerson())) { Debug.Log("ACEO Tweaks | Info: " + fleetMember.AircraftName + " cannot fly distance " + route.Distance + "km (do you have refueling available?)"); }
                 if (!fleetMember.CanDispatchAdditionalAircraft()) { }
-                if (!fleetMember.CanOperateFromPlayerAirportStands(0)) { Debug.Log("ACEO Tweaks | Info: " + fleetMember.AircraftString + " cannot operate from player stand sizes"); }
+                if (!fleetMember.CanOperateFromPlayerAirportStands(0)) { Debug.Log("ACEO Tweaks | Info: " + fleetMember.AircraftName + " cannot operate from player stand sizes"); }
             }
                 
             return
@@ -125,11 +125,11 @@ namespace AirportCEONationality
                 
 
             float suitability = (rangeUtilization*100) / sizeMismatch;
-            suitability = (float)(suitability * fleetMember.FleetCount);
+            suitability = (float)(suitability * fleetMember.NumberInFleet);
 
             // Post-processing special conditions
 
-            if (AirTrafficController.IsSupersonic(fleetMember.AircraftString))
+            if (AirTrafficController.IsSupersonic(fleetMember.AircraftName))
             {
                 if (routeThatIsPossible.Etops)
                 {
@@ -140,7 +140,7 @@ namespace AirportCEONationality
                     suitability /= 2;
                 }
             }                             //more likely for ocean crossing
-            if (AirTrafficController.IsEastern(fleetMember.AircraftString) || fleetMember._AircraftType.id == "TU144")
+            if (AirTrafficController.IsEastern(fleetMember.AircraftName) || fleetMember._AircraftType.id == "TU144")
             {
                 bool ussr = false;
                 string[] codes = new string[] {"AM","AZ","BY","EE","GE","KZ","KG","LV","LT","MD","RU","TJ","TM","UA","UZ"};
@@ -160,14 +160,14 @@ namespace AirportCEONationality
                     suitability /= 2;
                 }
             }  //more likely from former USSR
-            if (AirTrafficController.IsVintage(fleetMember.AircraftString))
+            if (AirTrafficController.IsVintage(fleetMember.AircraftName))
             {
                 suitability /= 3;
             }                                //less likely
 
             if (suitability == float.NaN)
             {
-                Debug.LogError("ACEO Tweaks | ERROR: Route Suitibility is NaN! Info: aircraft = " + fleetMember.AircraftString + ", range utilization = " + rangeUtilization + "sizeMismatch = " + sizeMismatch);
+                Debug.LogError("ACEO Tweaks | ERROR: Route Suitibility is NaN! Info: aircraft = " + fleetMember.AircraftName + ", range utilization = " + rangeUtilization + "sizeMismatch = " + sizeMismatch);
                 return 0f;
             }
             return (suitability + UnityEngine.Random.Range(-0.2f*suitability,0.2f*suitability));
