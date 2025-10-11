@@ -1,4 +1,5 @@
 ﻿using AirportCEOModLoader.WatermarkUtils;
+using AirportCEOModLoader.SaveLoadUtils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,11 +15,16 @@ namespace AirportCEOAircraft
         internal static void SetUpInteractions()
         {
             // More will probably be added!
-            AirportCEOAircraft.LogInfo("Seting up ModLoader interactions");
+            AirportCEOAircraft.LogInfo("Setting up ModLoader interactions");
 
             WatermarkUtils.Register(new WatermarkInfo("T-AC", "", true));
 
             AirportCEOAircraft.LogInfo("Completed ModLoader interactions!");
+        }
+
+        internal static void AddCoroutineReference(AircraftAdder aircraftAdder)
+        {
+            CoroutineEventDispatcher.RegisterToLaunchGamePhase(aircraftAdder.Initialize, CoroutineEventDispatcher.CoroutineAttachmentType.Before);
         }
     }
 }

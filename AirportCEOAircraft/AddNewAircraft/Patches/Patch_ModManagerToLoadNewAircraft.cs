@@ -35,7 +35,7 @@ namespace AirportCEOAircraft
 				{
 					if (AirportCEOAircraft.aircraftPaths.AddIfNotContains(path))
 					{
-						Debug.Log("ACEO Tweaks | Log : added path " + path + " to List<> aircraftPaths");
+						AirportCEOAircraft.TweaksLogger.LogInfo($"Added path \"{path}\" to List<> aircraftPaths");
 					}
 				}
 			}

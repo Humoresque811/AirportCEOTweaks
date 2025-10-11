@@ -5,7 +5,7 @@
     <AssemblyName>AirportCEOTweaksCore</AssemblyName>
 	<Product>AirportCEOTweaksCore</Product>
     <Description></Description>
-	<Version>3.0.809.131</Version>
+	<Version>3.1.1</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <RestoreAdditionalProjectSources>
@@ -15,21 +15,12 @@
     </RestoreAdditionalProjectSources>
     <Authors>Ezekiel Ward</Authors>
     <Company />
-  	<GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
-	<GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
+	<ComVisible>false</ComVisible>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <OutputPath>C:\Program Files (x86)\Steam\steamapps\common\Airport CEO\BepInEx\plugins\</OutputPath>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Remove="DummyAssemblyInfo.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="DummyAssemblyInfo.cs" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
@@ -69,5 +60,8 @@
     </Reference>
   </ItemGroup>
 
-  <ProjectExtensions><VisualStudio><UserProperties BuildVersion_AssemblyInfoFilename="AssemblyInfo.cs" BuildVersion_StartDate="2000/1/1" BuildVersion_UseGlobalSettings="True" /></VisualStudio></ProjectExtensions>
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Copy SourceFiles="$(TargetDir)\$(TargetName).dll" DestinationFolder="C:\Program Files (x86)\Steam\steamapps\common\Airport CEO\BepInEx\plugins" />
+		<Copy SourceFiles="$(TargetDir)\$(TargetName).pdb" DestinationFolder="C:\Program Files (x86)\Steam\steamapps\common\Airport CEO\BepInEx\plugins" />
+	</Target>
 </Project>

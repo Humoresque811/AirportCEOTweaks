@@ -1,17 +1,12 @@
-﻿using System;
+﻿using AirportCEOAircraft.AddNewAircraft;
+using AirportCEOTweaksCore;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
-using Newtonsoft.Json;
 using System.Reflection;
-using Tweaks_PerformanceCEO;
-using AirportCEOTweaksCore;
-
-
+using UnityEngine;
 
 namespace AirportCEOAircraft
 {
@@ -19,9 +14,13 @@ namespace AirportCEOAircraft
     {
         public bool working = true;
 
-        public IEnumerator Initilize()
+        private static readonly string aircraftText = "aircraft";
+        private static readonly string helicopterText = "helicopter";
+
+        public IEnumerator Initialize()
         {
-            Debug.Log("Tweaks Aircraft loader init");
+            AirportCEOAircraft.TweaksLogger.LogMessage("Loading Aircrafts!");
+
             List<AircraftTypeData> aircraftTypeList = ProccessAircraftPaths(AirportCEOAircraft.aircraftPaths.ToArray());
             AirTrafficController atc = Singleton<AirTrafficController>.Instance;
             HashSet<GameObject> aircraftGameObjectsSet = new HashSet<GameObject>();
@@ -29,15 +28,18 @@ namespace AirportCEOAircraft
             int processedAircraftCount = 1;
             foreach (AircraftTypeData aircraftTypeData in aircraftTypeList)
             {
-                Debug.Log("Tweaks Aircraft loader foreach "+ aircraftTypeData.Id);
-                for (int i = 0; i<aircraftTypeData.id.Length; i++)
+                // Ex: "Now loading helicopter H130"
+                // TODO uncomment when working on helicopters
+                //AirportCEOAircraft.TweaksLogger.LogInfo($"Now loading {(aircraftTypeData.helicopter ? helicopterText : aircraftText)} {aircraftTypeData.Id}");
+
+                for (int i = 0; i < aircraftTypeData.id.Length; i++)
                 {
                     GameObject aircraftGameObject = MakeAircraftGameObject(aircraftTypeData, i);
 
                     DoTweaksLiveryBakeIn(aircraftGameObject, aircraftTypeData); //must proceed scaling becasue scale is based off bounding box
 
                     AircraftScaleManager scale;
-                    if(!aircraftGameObject.TryGetComponent<AircraftScaleManager>(out scale))
+                    if (!aircraftGameObject.TryGetComponent<AircraftScaleManager>(out scale))
                     {
                         scale = aircraftGameObject.AddComponent<AircraftScaleManager>();
                     }
@@ -52,10 +54,21 @@ namespace AirportCEOAircraft
                     {
                         AirportCEOTweaksCore.AirportCEOTweaksCore.aircraftTypeDataDict.Add(aircraftTypeData.id[i], aircraftTypeData.SingleAircraftTypeData(aircraftTypeData.id[i]));
                     }
+
+                    GeneralAviationManager.HandleGeneralAviation(i, aircraftTypeData);
+
                 }
                 yield return null;
-                Singleton<SceneMessagePanelUI>.Instance.SetLoadingText("Tweaks Aircraft | Loading:   " + aircraftTypeData.DisplayName, ((processedAircraftCount*100f)/(float)aircraftTypeList.Count).RoundToIntLikeANormalPerson().Clamp(5, 100));
+                Singleton<SceneMessagePanelUI>.Instance.SetLoadingText("Tweaks Aircraft | Loading:   " + aircraftTypeData.DisplayName, ((processedAircraftCount * 100f) / (float)aircraftTypeList.Count).RoundToIntLikeANormalPerson().Clamp(5, 100));
                 processedAircraftCount++;
+            }
+
+
+            var ga = atc.GAAircraft.aircraft;
+            AirportCEOAircraft.TweaksLogger.LogMessage($"Folowing aircrafts are GA's");
+            for (int j = 0; j < ga.Length; j++)
+            {
+                AirportCEOAircraft.TweaksLogger.LogMessage($"Loading: {ga[j]}");
             }
 
             aircraftGameObjectsSet.UnionWith(atc.aircraftPrefabs);
@@ -67,17 +80,12 @@ namespace AirportCEOAircraft
                 aircraftModelList.Add(prefab.GetComponent<AircraftController>().am);
             }
 
-            atc.GetType().GetField("aircraftModels",BindingFlags.NonPublic | BindingFlags.Instance).SetValue(atc, aircraftModelList.ToArray());
+            atc.GetType().GetField("aircraftModels", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(atc, aircraftModelList.ToArray());
 
             working = false;
-            //Singleton<SaveLoadGameDataController>.Instance.InitializeGameSession();
             yield break;
         }
-        public IEnumerator packagedEnumerator(object original)
-        {
-            yield return base.StartCoroutine(Initilize());
-            yield return original;
-        }
+
         private GameObject MakeAircraftGameObject(AircraftTypeData aircraftTypeData, int index = 0)
         {
 
@@ -126,7 +134,7 @@ namespace AirportCEOAircraft
                 //name and transform of new GameObject
                 newGameObject.name = aircraftType.id;
                 newGameObject.transform.localEulerAngles = Vector3.zero;
-                
+
 
                 //Add the new AircraftType
                 var method = typeof(CustomEnums).GetMethod("AddAircrafTypeRange", BindingFlags.Static | BindingFlags.NonPublic);
@@ -134,8 +142,8 @@ namespace AirportCEOAircraft
                 {
                     Debug.LogError("ACEO Tweaks | ERROR: Couldn't find AddAircraftTypeRange method via reflection!");
                 }
-                method.Invoke(obj: null, parameters: new object[] { new AircraftType[] { aircraftType } } );
-            
+                method.Invoke(obj: null, parameters: new object[] { new AircraftType[] { aircraftType } });
+
             }
             //Debug.Log("ACEO Tweaks | Log: Aircraft Adder MakeAircraftGameObject Conditional End");
             //Debug.Log("ACEO Tweaks | Log: Aircraft Adder is for "+aircraftType.id);
@@ -162,9 +170,12 @@ namespace AirportCEOAircraft
             newAircraftModel.aircraftType = aircraftTypeData.id[index];  //must have an id at every index. Only manditory array.
             newAircraftModel.weightClass = aircraftTypeData.threeStepSize;
             newAircraftModel.manufacturer = aircraftTypeData.manufacturer.Length > index ? aircraftTypeData.manufacturer[index] : aircraftTypeData.manufacturer[0];
-            newAircraftModel.modelNbr = aircraftTypeData.displayName.Length > index? aircraftTypeData.displayName[index] : aircraftTypeData.displayName[0];  
+            newAircraftModel.modelNbr = aircraftTypeData.displayName.Length > index ? aircraftTypeData.displayName[index] : aircraftTypeData.displayName[0];
             newAircraftModel.maxPax = aircraftTypeData.capacity_PAX.Length > index ? aircraftTypeData.capacity_PAX[index] : aircraftTypeData.capacity_PAX[0];
             newAircraftModel.seatRows = aircraftTypeData.seatsAbreast.Length > index ? aircraftTypeData.seatsAbreast[index] : aircraftTypeData.seatsAbreast[0];
+
+            // TODO uncomment when working on helicopters
+            //newAircraftModel.isHelicopter = aircraftTypeData.helicopter;
 
             //Debug.Log("ACEO Tweaks | Log: Aircraft Adder MakeAircraftGameObject Model Block End");
 
@@ -214,10 +225,10 @@ namespace AirportCEOAircraft
             newAircraftController.requiresElevatedAccess = aircraftTypeData.needStairs.Length > index ? aircraftTypeData.needStairs[index] : aircraftTypeData.needStairs[0];
 
             short cateringPoints = aircraftTypeData.cateringPoints.Length > index ? aircraftTypeData.cateringPoints[index] : aircraftTypeData.cateringPoints[0];
-            newAircraftController.onlyUseOneCateringTruck = cateringPoints <=1 ? true : false;
+            newAircraftController.onlyUseOneCateringTruck = cateringPoints <= 1 ? true : false;
 
             short jetbridgePoints = aircraftTypeData.jetbridgePoints.Length > index ? aircraftTypeData.jetbridgePoints[index] : aircraftTypeData.jetbridgePoints[0];
-            newAircraftController.onlyUseOneJetway = jetbridgePoints <=1 ? true : false;
+            newAircraftController.onlyUseOneJetway = jetbridgePoints <= 1 ? true : false;
 
             //Debug.Log("ACEO Tweaks | Log: Aircraft Adder Make Aircraft Game Object Bottom");
             return newGameObject;
@@ -285,8 +296,8 @@ namespace AirportCEOAircraft
                 LiveryComponent liveryComponent = liveryComponetArray[j];
 
                 liveryComponent.slicePosition = RoundVecToInt(liveryComponent.slicePosition / downscaleAmount);
-				liveryComponent.sliceSize = RoundVecToInt(liveryComponent.sliceSize / downscaleAmount);
-				liveryComponent.scale *= downscaleAmount;
+                liveryComponent.sliceSize = RoundVecToInt(liveryComponent.sliceSize / downscaleAmount);
+                liveryComponent.scale *= downscaleAmount;
 
                 liveryComponent.ClampValues(new Vector2((float)texture2D.width, (float)texture2D.height));
                 if (lhs == Vector2.zero || lhs2 == Vector2.zero || lhs != liveryComponent.slicePosition || lhs2 != liveryComponent.sliceSize)
@@ -356,7 +367,8 @@ namespace AirportCEOAircraft
                 case DownscaleEnums.DownscaleLevel.Downscale8X:
                     downscaleAmount = 8; // Not recommended
                     break;
-            };
+            }
+            ;
             return downscaleAmount;
         }
 
@@ -406,7 +418,7 @@ namespace AirportCEOAircraft
             string[] fileEntries = Directory.GetFiles(targetDirectory);
             foreach (string fileName in fileEntries)
             {
-                if(ProcessFile(fileName, out aircraftTypeData))
+                if (ProcessFile(fileName, out aircraftTypeData))
                 {
                     List.Add(aircraftTypeData);
                 }
@@ -417,7 +429,7 @@ namespace AirportCEOAircraft
             string[] subdirectoryEntries = Directory.GetDirectories(targetDirectory);
             foreach (string subdirectory in subdirectoryEntries)
             {
-                if(ProcessDirectory(subdirectory, out DirList))
+                if (ProcessDirectory(subdirectory, out DirList))
                 {
                     List.AddRange(DirList);
                 }
@@ -426,7 +438,7 @@ namespace AirportCEOAircraft
 
             aircraftTypeDatas = List;
 
-            if (List.Count>0)
+            if (List.Count > 0)
             {
                 return true;
             }
@@ -451,26 +463,24 @@ namespace AirportCEOAircraft
             }
         }
 
-	    private static Vector2 RoundVecToInt(Vector2 vec)
-	    {
-		    return new Vector2(Utils.RoundToIntLikeANormalPerson(vec.x), Utils.RoundToIntLikeANormalPerson(vec.y));
-	    }
+        private static Vector2 RoundVecToInt(Vector2 vec)
+        {
+            return new Vector2(Utils.RoundToIntLikeANormalPerson(vec.x), Utils.RoundToIntLikeANormalPerson(vec.y));
+        }
 
-	    private static Texture2D DownscaleTexture(Texture2D source, int newWidth, int newHeight)
-	    {
-		    RenderTexture rt = RenderTexture.GetTemporary(newWidth, newHeight);
+        private static Texture2D DownscaleTexture(Texture2D source, int newWidth, int newHeight)
+        {
+            RenderTexture rt = RenderTexture.GetTemporary(newWidth, newHeight);
 
-		    RenderTexture.active = rt;
+            RenderTexture.active = rt;
 
-		    Graphics.Blit(source, rt);
-		    source.Resize(newWidth, newHeight, TextureFormat.ARGB32, false); //.ARGB32
-		    source.ReadPixels(new Rect(0, 0, newWidth, newHeight), 0,0);
-		    source.Apply();
-		    RenderTexture.active = null;
-		    RenderTexture.ReleaseTemporary(rt);
-		    return source;
-	    }
-
-
+            Graphics.Blit(source, rt);
+            source.Resize(newWidth, newHeight, TextureFormat.ARGB32, false); //.ARGB32
+            source.ReadPixels(new Rect(0, 0, newWidth, newHeight), 0, 0);
+            source.Apply();
+            RenderTexture.active = null;
+            RenderTexture.ReleaseTemporary(rt);
+            return source;
+        }
     }
 }
