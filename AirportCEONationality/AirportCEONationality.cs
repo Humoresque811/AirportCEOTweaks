@@ -11,7 +11,7 @@ using BepInEx.Logging;
 namespace AirportCEONationality
 {
 
-    [BepInPlugin(GUID,PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
+    [BepInPlugin(GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
     [BepInDependency("org.airportceomodloader.humoresque")]
     [BepInIncompatibility("org.airportceotweaks.zeke")]
     [BepInDependency("org.airportceotweakscore.zeke")]
@@ -50,7 +50,7 @@ namespace AirportCEONationality
             LogInfo("Tweaks Nationality finished start");
         }
 
-        // This is code for BepInEx logging, which Tweaks doesn't really use. Here if nessesary
+        // This is code for BepInEx logging, which Tweaks doesn't really use. Here if necessary
         internal static void Log(string message) => LogInfo(message);
         internal static void LogInfo(string message) => TweaksLogger.LogInfo(message);
         internal static void LogError(string message) => TweaksLogger.LogError(message);

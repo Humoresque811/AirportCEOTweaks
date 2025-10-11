@@ -41,7 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="AirportCEOModLoader" Publicize="true">
+    <Reference Include="AirportCEOModLoader">
       <HintPath>lib\AirportCEOModLoader.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp" Publicize="true">

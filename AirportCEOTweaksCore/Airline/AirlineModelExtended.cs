@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using BepInEx.Logging;
 using BepInEx;
@@ -16,16 +15,45 @@ namespace AirportCEOTweaksCore
 {
     public class AirlineModelExtended : AirlineModel
     {
-        AirlineBusinessData airlineBusinessData;
+        // This block of props are always filled in! They can always safely be used to get the correct information
+        public AirlineBusinessData airlineBusinessData { get; private set; }
+        public AirlineModel ParentModel { get; private set; }
+        public Country[] HomeCountries { get; private set; }
+        public SortedDictionary<int, AirlineFleetMember> AirlineFleetMembersDictionary { get; private set; }
+        public string[] FleetModels { get; private set; }
+        public int[] FleetCounts { get; private set; }
+
+        //public Enums.BusinessClass starRank;
+        //public float economyTier = 2;
+        //public HashSet<PAXCommercialFlightModelExtended> myFlights;
+        //public float cargoProportion = 0f;
+        //public float maxRange = 0f;
+        //public float minRange = float.MaxValue;
+        //private string countryCode;
+        //public Country[] forbidCountries;
+        //public Dictionary<Airport,float> hUBs;
+        //private List<AirlineModel> brandOrAlliance;
+        //private List<AirlineModel> siblings;
+        //private List<AirlineModel> parents;
+
+        private Dictionary<string, (float Available, float Allocated)> AircraftTypeAllocation = new Dictionary<string, (float Available, float Allocated)>();
+
         public AirlineModelExtended(Airline airline, ref AirlineModel airlineModel) : base(airline)
         {
-            if (airline == null) { Debug.LogError("ERROR: Airline Model Extended ctor encountered airline == null!");  return; }
-            if (Singleton<ModsController>.Instance == null) { Debug.LogError("ERROR: Airline Model Extended ctor encountered ModsController == null!"); return; }
+            if (airline == null) 
+            { 
+                Debug.LogError("ERROR: Airline Model Extended ctor encountered airline == null!"); 
+                return; 
+            }
+            if (Singleton<ModsController>.Instance == null) 
+            { 
+                Debug.LogError("ERROR: Airline Model Extended ctor encountered ModsController == null!"); 
+                return; 
+            }
 
-            //Debug.Log("AirlineModelExtended for " + businessName + " is ctor-ing");
+            ParentModel = airlineModel;
 
             Singleton<BusinessController>.Instance.RemoveFromBusinessList(this);
-
             ConsumeBaseAirlineModel(airlineModel);
 
             if (Singleton<ModsController>.Instance.airlineBusinessDataByBusinessName.TryGetValue(businessName, out AirlineBusinessData data))
@@ -37,22 +65,22 @@ namespace AirportCEOTweaksCore
                 Debug.LogWarning("ACEO Tweaks WARN: No airlinebusinessdata path for "+businessName);
             }
 
-            //Singleton<BusinessController>.Instance.RemoveFromBusinessList(airlineModel);
             airlineModel = this;
             Singleton<BusinessController>.Instance.RemoveFromBusinessList(this);
             Singleton<BusinessController>.Instance.AddToBusinessList(this);
 
-
             MakeUpdateFleet();
+            HomeCountries = airlineBusinessData.arrayHomeCountryCodes.Length == 0 ? CountryRetriever(new string[] { airline.countryCode }) : CountryRetriever(airlineBusinessData.arrayHomeCountryCodes);
+
 
         }
 
-        public Dictionary<string, (float Available, float Allocated)> AircraftTypeAllocation = new Dictionary<string, (float Available, float Allocated)>();
 
         public void Refresh()
         {
             MakeUpdateFleet();
         }
+
         private void ConsumeBaseAirlineModel(AirlineModel airlineModel)
         {
             foreach (var field in typeof(AirlineModel).GetFields(HarmonyLib.AccessTools.all))
@@ -60,6 +88,7 @@ namespace AirportCEOTweaksCore
                 field.SetValue(this, field.GetValue(airlineModel));
             }
         }
+
         private void MakeUpdateFleet()
         {
             //Replace Fleet with TweaksFleet
@@ -76,7 +105,6 @@ namespace AirportCEOTweaksCore
                     {
                         AllTypesList.Add(aircraftModel.aircraftType);
                     }
-                        //Singleton<AirTrafficController>.Instance.aircraftModels.ToList()//(typeof(AirTrafficController).GetField("aircraftModels", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(Singleton<AirTrafficController>.Instance)).ToList();
 
                     for (int i = 0; i < FleetList.Count;)
                     {
@@ -95,7 +123,6 @@ namespace AirportCEOTweaksCore
                     }
 
                     aircraftFleetModels = airlineBusinessData.fleet;
-                    //Debug.Log("updated a non-tweaksFleet fleet");
                 }
             }
             else
@@ -146,8 +173,21 @@ namespace AirportCEOTweaksCore
                         fleetCount[i] = 2 * ((int)businessClass);
                     }
 
-                    airlineBusinessData.tweaksFleetCount = fleetCount;
+                    // Its a struct - no in line edits to it apparently
+                    AirlineBusinessData newBusinessData = airlineBusinessData;
+                    newBusinessData.tweaksFleetCount = fleetCount;
+                    airlineBusinessData = newBusinessData;
                 }
+            }
+
+            FleetModels = airlineBusinessData.tweaksFleet.Length == 0 ? ParentModel.flightList.ToArray() : airlineBusinessData.tweaksFleet;
+            FleetCounts = airlineBusinessData.tweaksFleetCount.Length == 0 ? ParentModel.fleetCount : airlineBusinessData.tweaksFleetCount;
+
+            AirlineFleetMembersDictionary = new SortedDictionary<int, AirlineFleetMember>();
+
+            for (int i = 0; i < FleetModels.Length; i++)
+            {
+                AirlineFleetMembersDictionary.Add(i, new AirlineFleetMember(ParentModel, FleetModels[i], FleetCounts[i]));
             }
         }
 
@@ -207,5 +247,37 @@ namespace AirportCEOTweaksCore
                 }
             }
         }
+
+        private Country[] CountryRetriever(string[] codes)
+        {
+            if (codes == null || codes.Length==0)
+            {
+                return null;
+            }
+
+            HashSet<string> codeList = new HashSet<string>(codes);
+
+            List<Country> countryList = new();
+            foreach (string code in codeList)
+            {
+                try
+                {
+                    Country country = TravelController.GetCountryByCode(code);
+                    if (country != null && !countryList.Contains(country))
+                    {
+                        countryList.Add(country);
+                    }
+                }
+                catch
+                {
+                    if (!string.IsNullOrEmpty(code))
+                    {
+                        Debug.LogError("ACEO Tweaks | ERROR: In airline " + ParentModel.businessName + " could not get country for counrty code!");
+                    }
+                }
+            }
+
+            return countryList.ToArray();
+        }    
     }
 }

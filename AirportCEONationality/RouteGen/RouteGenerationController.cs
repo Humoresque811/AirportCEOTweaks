@@ -508,7 +508,7 @@ namespace AirportCEONationality
         {
 			//int i= 0; //debug only
 			Debug.Log("ACEO Tweaks | Debug: CoroutineGenerateRoutes Started");
-			for (;;)
+			while (true)
 			{
 				short numToGen = ((short)((airports.Length - routeContainers.Count) / (200))).Clamp<short>(2,20);
 				if (numToGen < 4)
@@ -531,7 +531,7 @@ namespace AirportCEONationality
 			}
 		}
 		//Map of continent vs continent twin-engine restriction
-		public readonly bool[,] etopsContinents ={
+		public readonly bool[,] etopsContinents = {
 		    //  EU    AS    NA    AF    AN    SA    OC
 		      {false,false,true ,false,true ,true ,true },   //  EU / Europe          	-  Falklands
 		    														  					
