@@ -16,7 +16,7 @@ namespace AirportCEORunways
             // More will probably be added!
             AirportCEORunways.LogInfo("Seting up ModLoader interactions");
 
-            WatermarkUtils.Register(new WatermarkInfo("Runways", Assembly.GetExecutingAssembly().GetName().Version.ToString(), false));
+            WatermarkUtils.Register(new WatermarkInfo("Runways", PluginInfo.PLUGIN_VERSION, false));
 
             AirportCEORunways.LogInfo("Completed ModLoader interactions!");
         }
