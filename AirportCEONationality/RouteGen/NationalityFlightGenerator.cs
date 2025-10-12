@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using AirportCEOTweaksCore;
+using KaimiraGames;
 using UnityEngine;
 
 namespace AirportCEONationality;
@@ -59,7 +60,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
             }
         }
 
-
+        // Main Loop/Loop Prep starts here .......................................................................................................................
         // Get data for decision
         float maxRange = 0;
         float minRange = float.MaxValue;
@@ -68,16 +69,67 @@ class NationalityFlightGenerator : FlightGeneratorBase
         bool remainInHomeCountries = extendedAirlineModel.airlineBusinessData.remainWithinHomeCodes;
         bool playerAirportInHomeCountries = airlineHomeCountries.Contains(GameDataController.GetUpdatedPlayerSessionProfileData().playerAirport.Country);
 
+        // Initial aircraft data loaded
+        WeightedList<AirlineFleetMember> fleetMembersWeighted = new();
+        FillListWithAirlineFleetInfo(extendedAirlineModel, ref fleetMembersWeighted);
 
-        // Select Aircraft - We start with this and then find a route for it to fly
-        AircraftModel selectedAircraft = null;
-        AircraftType selectedAircraftType = default;
+        // Loop iteration variables
+        bool useDumbGeneration = false;
+        if (airlineHomeCountries == null)
+        {
+            useDumbGeneration = true;
+        }
 
-        
+        // Main loop!
+        commercialFlightModel = null;
+        do
+        {
+            if (fleetMembersWeighted.Count == 0 && useDumbGeneration) // There are no appropriate routes for any member of this airlines fleet based on the settings!
+            {
+                AirportCEONationality.LogWarning($"Airline mod \"{extendedAirlineModel.businessName}\" is unable to service given airport with any aircraft given custom settings!");
+                if (AirportCEONationalityConfig.ForceGenerateRoutes.Value)
+                {
+                    useDumbGeneration = true;
+                    FillListWithAirlineFleetInfo(extendedAirlineModel, ref fleetMembersWeighted);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // If we can't generate a single aircraft flight with dumb generation, then what ????
+                throw new NotImplementedException("Handle case when dumb generation fails!!");
+            }
+
+            AirlineFleetMember fleetMemberToUse = fleetMembersWeighted.Next();
+            fleetMembersWeighted.Remove(fleetMemberToUse);
+
+            if (!fleetMemberToUse.AvailableByDLC() || !fleetMemberToUse.CanOperateFromPlayerAirportStands(0))
+            {
+                continue;
+            }
+
+
+
+        }
+        while (commercialFlightModel != null);
+
+
 
         //Select Route
 
         //Instantiate the Flights
+    }
+
+    private static void FillListWithAirlineFleetInfo(AirlineModelExtended extendedAirlineModel, ref WeightedList<AirlineFleetMember> fleetMembersWeighted)
+    {
+        fleetMembersWeighted.Clear();
+        foreach (AirlineFleetMember fleetMember in extendedAirlineModel.AirlineFleetMembersDictionary.Values)
+        {
+            fleetMembersWeighted.Add(fleetMember, fleetMember.NumberInFleet);
+        }
     }
 
     public bool FleetMemberCanServeRoute(AirlineFleetMember fleetMember, RouteContainer route, float chanceToOfferRegaurdless = 0, bool debug = false)
@@ -98,11 +150,11 @@ class NationalityFlightGenerator : FlightGeneratorBase
             fleetMember.CanDispatchAdditionalAircraft() &&
             fleetMember.CanOperateFromPlayerAirportStands(chanceToOfferRegaurdless);
     }
-    public float SuitabilityForRoute(AirlineFleetMember fleetMember, RouteContainer routeThatIsPossible, bool forceCargo = false)
+    public float SuitabilityForRoute(AirlineFleetMember fleetMember, RouteContainer routeThatIsPossible, bool isInternational, bool forceCargo = false)
     {
-        float rangecap = 1f;
+        float rangecap;
         bool cargo = fleetMember.AircraftModel.maxPax == 0 ? true : forceCargo;
-        int size = cargo ? (int)routeThatIsPossible.Airport.cargoSize : (int)routeThatIsPossible.Airport.paxSize;
+        int airportSize = cargo ? (int)routeThatIsPossible.Airport.cargoSize : (int)routeThatIsPossible.Airport.paxSize;
 
         switch(fleetMember.AircraftModel.seatRows)
         {
@@ -119,14 +171,19 @@ class NationalityFlightGenerator : FlightGeneratorBase
 
         if (cargo) rangecap = 0.5f;
             
-        int sizeMismatch = (Math.Abs(size - (int)fleetMember.AircraftSize)); // 0,1,2,3,4...
+        int sizeMismatch = airportSize - (int)fleetMember.AircraftSize; // 0,1,2,3,4...
+        if (sizeMismatch > 0)
+        {
+            sizeMismatch -= 1; // Allow for smaller planes to go to bigger airports with less penalty
+        }
+        sizeMismatch = Math.Abs(sizeMismatch);
         sizeMismatch = sizeMismatch == 0 ? 1 : sizeMismatch;                                         // 1,1,2,3,4...
 
         float rangeUtilization = ((routeThatIsPossible.Distance/fleetMember.RangeKM).Clamp(0f,rangecap))/rangecap; //utilizing range is good, where possible shorter range aircraft should be used for shorter routes.
             
 
         float suitability = (rangeUtilization*100) / sizeMismatch;
-        suitability = (float)(suitability * fleetMember.NumberInFleet);
+        //suitability = (float)(suitability * fleetMember.NumberInFleet); // Already accounted for in the generation
 
         // Post-processing special conditions
 
@@ -168,9 +225,17 @@ class NationalityFlightGenerator : FlightGeneratorBase
 
         if (suitability == float.NaN)
         {
-            Debug.LogError("ACEO Tweaks | ERROR: Route Suitibility is NaN! Info: aircraft = " + fleetMember.AircraftName + ", range utilization = " + rangeUtilization + "sizeMismatch = " + sizeMismatch);
+            Debug.LogError("ACEO Tweaks | ERROR: Route Suitability is NaN! Info: aircraft = " + fleetMember.AircraftName + ", range utilization = " + rangeUtilization + "sizeMismatch = " + sizeMismatch);
             return 0f;
         }
+
+        if (isInternational)
+        {
+            // Reduce chance that smaller flights generate across borders
+            suitability *= fleetMember.AircraftSize < Enums.GenericSize.Medium ? 0.75f : 1f;
+            suitability *= airportSize < (int)Enums.GenericSize.Medium ? 0.75f : 1f;
+        }
+
         return (suitability + UnityEngine.Random.Range(-0.2f*suitability,0.2f*suitability));
     }    
 }

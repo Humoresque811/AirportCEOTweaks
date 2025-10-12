@@ -120,7 +120,7 @@ namespace AirportCEONationality
             {
 				if (chance < 0)
                 {
-					chance = Calculate_Chance(size);
+					chance = CalculateChance(size);
                 }
 				return chance;
             }
@@ -152,7 +152,7 @@ namespace AirportCEONationality
 			return GetDirectionBetweenCoordinates(lat1, long1, lat2, long2);
         }
 
-		private int Calculate_Chance(Enums.GenericSize size)
+		private int CalculateChance(Enums.GenericSize size)
         {
 			if (Distance<=0)
             {

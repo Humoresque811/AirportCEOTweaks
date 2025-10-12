@@ -5,19 +5,15 @@ using Mono.CompilerServices.SymbolWriter;
 
 namespace AirportCEONationality
 {
-
     public class AirportCEONationalityConfig
     {
-
-        //public static ConfigEntry<bool> LiveryLogs { get; private set; }
-        //public static ConfigEntry<string> PathToCrosshairImage { get; private set; }
-
-        // Struture repair removed (to an external mod maybe)
+        internal static ConfigEntry<bool> ForceGenerateRoutes { get; private set; }
 
         internal static void SetUpConfig()
         {
-            //LiveryLogs = ConfigRef.Bind("Debug", "Livery Author Log Files", false, "Enable/Disable extra log files for livery authors to debug active liveries");
-            //PathToCrosshairImage = ConfigRef.Bind("Debug", "Path to crosshair", "", "Path to crosshair for mod devs. If empty function will not work");
+            ForceGenerateRoutes = ConfigRef.Bind("General", "Force Route Generation", true, "When enabled, airlines will always generate possible routes even if their configuration " +
+                "(home country, hub locations, aircraft fleet) would not allow it. Disabling will lead to more realistic gameplay, however, some custom airlines may not generate any " +
+                "flights!");
         }
 
         private static ConfigFile ConfigRef => AirportCEONationality.ConfigReference;

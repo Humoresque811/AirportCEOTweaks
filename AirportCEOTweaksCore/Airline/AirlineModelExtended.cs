@@ -22,6 +22,18 @@ namespace AirportCEOTweaksCore
         public SortedDictionary<int, AirlineFleetMember> AirlineFleetMembersDictionary { get; private set; }
         public string[] FleetModels { get; private set; }
         public int[] FleetCounts { get; private set; }
+        public int TotalFleetCount
+        {
+            get
+            {
+                int total = 0;
+                foreach (int fleetMemberCount in fleetCount)
+                {
+                    total += fleetMemberCount;
+                }
+                return total;
+            }
+        }
 
         //public Enums.BusinessClass starRank;
         //public float economyTier = 2;
