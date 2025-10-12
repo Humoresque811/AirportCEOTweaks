@@ -43,21 +43,26 @@ namespace AirportCEOTweaksCore
 
 		[HarmonyPatch("GenerateFlight")]
 		[HarmonyPrefix]
-		public static bool Patch_GenerateFlight(AirlineModel __instance, bool isEmergency, bool isAmbulance)
+		public static bool Patch_GenerateFlight(AirlineModel __instance, bool isEmergency, bool isAmbulance, ref bool __result)
 		{
+			/*********** The return value is whether to proceed with default generation or not, the __result is success or not ***********/
+
 			if (Singleton<ModsController>.Instance.flightGenerator.OverrideHarmonyPrefix)
             {
-				return true;
+				return true; // This is to avoid infinite loops with our default fight generator (it has to call this method, but we want to let it execute)
             }
-			Debug.Log("Generate Flight Prefix for "+ __instance.businessName);
+
+			AirportCEOTweaksCore.LogDebug($"Generating Flight for \"{__instance.businessName}\"");
 			if (Singleton<ModsController>.Instance.flightGenerator.GenerateFlight(__instance, isEmergency, isAmbulance))
             {
-				Debug.Log("Generate Flight was True");
+				// A custom flight generator generated a flight and returned success 
+				AirportCEOTweaksCore.LogDebug("Custom flight generators GenerateFlight was true");
+				__result = true; // This matters only if we return false, now we assign it
 				return false;
             }
 			else
             {
-				Debug.Log("Generate Flight was False");
+				AirportCEOTweaksCore.LogDebug("Custom flight generators GenerateFlight was false");
 				return true;
             }
 			

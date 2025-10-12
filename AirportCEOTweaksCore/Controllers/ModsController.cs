@@ -10,7 +10,7 @@ namespace AirportCEOTweaksCore
 {
     public class ModsController : Singleton<ModsController>
     {
-        public IFlightGenerator flightGenerator;
+        public FlightGeneratorBase flightGenerator;
 
         public List<IServeAircraftTypeCheck> serveAircraftTypeChecks;
 
