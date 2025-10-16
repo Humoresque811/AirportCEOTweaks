@@ -42,6 +42,8 @@ namespace AirportCEONationality
             GameObject child = Instantiate(new GameObject());
             child.transform.SetParent(null);
             child.name = "ACEONationalitySysActive";
+
+            gameObject.AddComponent<RouteGenerationController>();
         }
 
         private void Start()

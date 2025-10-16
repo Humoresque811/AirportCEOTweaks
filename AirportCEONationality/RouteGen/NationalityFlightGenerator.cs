@@ -4,6 +4,8 @@ using System.Linq;
 using AirportCEOTweaksCore;
 using KaimiraGames;
 using UnityEngine;
+using UnityEngine.UIElements.Experimental;
+using static Enums;
 
 namespace AirportCEONationality;
 
@@ -11,7 +13,10 @@ class NationalityFlightGenerator : FlightGeneratorBase
 {
     public override string GeneratorName => typeof(NationalityFlightGenerator).Name;
 
-    public override bool GenerateFlightModel(AirlineModel airlineModel, bool isEmergency, bool isAmbulance, out CommercialFlightModel commercialFlightModel)
+    private static SortedSet<RouteContainer> routesToSearch; // Just to save the memory, no need to constantly reallocate
+    private static WeightedList<RouteContainer> finalRouteOptions;
+
+    public override bool GenerateFlightModel(AirlineModel airlineModel, bool isEmergency, bool isAmbulance, out List<CommercialFlightModel> commercialFlightModels)
     {
         AirlineModelExtended extendedAirlineModel = airlineModel.ExtendAirlineModel(ref airlineModel);
 
@@ -22,7 +27,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
             airlineModel.CancelContract();
             Debug.LogWarning("ACEO Tweaks | WARN: Airline " + airlineModel.businessName + "contract canceled due to no valid fleet!");
 
-            commercialFlightModel = null;
+            commercialFlightModels = null;
             return true;
         }
         if (airlineModel.aircraftFleetModels.Length == 0)
@@ -31,7 +36,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
             airlineModel.CancelContract();
             Debug.LogWarning("ACEO Tweaks | WARN: Airline " + airlineModel.businessName + "contract canceled due to no valid fleet!");
 
-            commercialFlightModel = null;
+            commercialFlightModels = null;
             return true;
         }
 
@@ -50,7 +55,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
                 if (i > 200)
                 {
                     Debug.LogWarning("ACEO Tweaks | WARN: Generate flight for " + airlineModel.businessName + " failed due to no available flight number");
-                    commercialFlightModel = null;
+                    commercialFlightModels = null;
                     return false;
                 }
             }
@@ -81,27 +86,31 @@ class NationalityFlightGenerator : FlightGeneratorBase
         }
 
         // Main loop!
-        commercialFlightModel = null;
+        commercialFlightModels = new();
         do
         {
-            if (fleetMembersWeighted.Count == 0 && useDumbGeneration) // There are no appropriate routes for any member of this airlines fleet based on the settings!
+            routesToSearch.Clear();
+            finalRouteOptions.Clear();
+
+            if (fleetMembersWeighted.Count == 0)// && useDumbGeneration) // There are no appropriate routes for any member of this airlines fleet based on the settings!
             {
-                AirportCEONationality.LogWarning($"Airline mod \"{extendedAirlineModel.businessName}\" is unable to service given airport with any aircraft given custom settings!");
-                if (AirportCEONationalityConfig.ForceGenerateRoutes.Value)
-                {
-                    useDumbGeneration = true;
-                    FillListWithAirlineFleetInfo(extendedAirlineModel, ref fleetMembersWeighted);
-                }
-                else
-                {
-                    return false;
-                }
+                return false;
+                //AirportCEONationality.LogWarning($"Airline mod \"{extendedAirlineModel.businessName}\" is unable to service given airport with any aircraft given custom settings!");
+                //if (AirportCEONationalityConfig.ForceGenerateRoutes.Value)
+                //{
+                //    useDumbGeneration = true;
+                //    FillListWithAirlineFleetInfo(extendedAirlineModel, ref fleetMembersWeighted);
+                //}
+                //else
+                //{
+                //    return false;
+                //}
             }
-            else
-            {
-                // If we can't generate a single aircraft flight with dumb generation, then what ????
-                throw new NotImplementedException("Handle case when dumb generation fails!!");
-            }
+            //else
+            //{
+            //    // If we can't generate a single aircraft flight with dumb generation, then what ????
+            //    throw new NotImplementedException("Handle case when dumb generation fails!!");
+            //}
 
             AirlineFleetMember fleetMemberToUse = fleetMembersWeighted.Next();
             fleetMembersWeighted.Remove(fleetMemberToUse);
@@ -111,16 +120,113 @@ class NationalityFlightGenerator : FlightGeneratorBase
                 continue;
             }
 
+            routesToSearch.UnionWith(RouteGenerationController.Instance.RouteContainers);
+            if (!playerAirportInHomeCountries) // Add in some big airports from the airlines home country (just in case we dont have any already)
+            {
+                foreach (Country country in airlineHomeCountries)
+                {
+                    routesToSearch.UnionWith(RouteGenerationController.Instance.GetRoutesToLargeAirportsInCountry(country));
+                }
+            }
 
+            foreach (RouteContainer inboundRoute in routesToSearch)
+            {
+                // To airport is *always* us
 
+                if (inboundRoute.Airport.paxSize.IsSmallerThan(fleetMemberToUse.AircraftSize) || inboundRoute.Distance > fleetMemberToUse.RangeKM) 
+                {
+                    continue; // We cannot serve a small airport with a big plane, and we cant serve the destination if its too far away
+                }
+
+                if (playerAirportInHomeCountries) // This means airline is domestic to players airport
+                {
+                    if (inboundRoute.VanillaDomestic)
+                    {
+                        finalRouteOptions.Add(inboundRoute, SuitabilityForRoute(fleetMemberToUse, inboundRoute, false));
+                    }
+                    else
+                    {
+                        if (remainInHomeCountries && !inboundRoute.VanillaDomestic)
+                        {
+                            continue;
+                        }
+
+                        finalRouteOptions.Add(inboundRoute, SuitabilityForRoute(fleetMemberToUse, inboundRoute, true));
+                    }
+                } 
+                else
+                {
+                    bool airportIsInHomeCodes = false;
+                    foreach (Country country in airlineHomeCountries)
+                    {
+                        if (!TravelController.IsDomesticAirport(inboundRoute.Airport, country))
+                        {
+                            continue;
+                        }
+                        
+                        airportIsInHomeCodes = true;
+                    }
+
+                    if (!airportIsInHomeCodes)
+                    {
+                        continue;
+                    }
+
+                    finalRouteOptions.Add(inboundRoute, SuitabilityForRoute(fleetMemberToUse, inboundRoute, true));
+                }
+            }
+
+            if (finalRouteOptions == null || finalRouteOptions.Count == 0)
+            {
+                continue;
+            }
+
+            RouteContainer route = finalRouteOptions.Next();
+
+            Route inboundRouteF = new Route(route.route);
+            Route outboundRouteF = new Route(inboundRouteF);
+            outboundRouteF.ReverseRoute();
+
+            if (inboundRouteF == null || outboundRouteF == null)
+            {
+                AirportCEONationality.LogWarning("Routes generated by NationalityFlightGenerator are null...");
+                continue;
+            }
+
+            inboundRouteF.routeNbr = flightNumber;
+            outboundRouteF.routeNbr = flightNumber;
+
+            int numInSeries = isEmergency ? 1 : Utils.RandomRangeI(2f, 5f);
+            if (!isEmergency)
+            {
+			    numInSeries = numInSeries.ClampMax(SingletonNonDestroy<BusinessController>.Instance.GetMaxActiveFlights(airlineModel.rating) - extendedAirlineModel.ActiveCount);
+		    }
+
+            for (int i = 0; i < numInSeries; i++)
+            {
+                CommercialFlightModel commercialFlightModel = new CommercialFlightModel(airlineModel.referenceID, true, fleetMemberToUse._AircraftType.id, inboundRouteF, outboundRouteF);
+                commercialFlightModel.isEmergency = isEmergency;
+                commercialFlightModel.numberOfFlightsInSerie = numInSeries;
+
+			    if (isEmergency)
+			    {
+				    commercialFlightModel.ResetDeparingPassengers();
+			    }
+			    if (isAmbulance)
+			    {
+				    commercialFlightModel.ResetArrivingPassengers();
+				    commercialFlightModel.isAmbulance = true;
+			    }
+                commercialFlightModels.Add(commercialFlightModel);
+            }
         }
-        while (commercialFlightModel != null);
+        while (commercialFlightModels.Count == 0);
 
-
-
-        //Select Route
-
-        //Instantiate the Flights
+        if (commercialFlightModels.Count > 0)
+        {
+            return true;
+        }
+        return false;
     }
 
     private static void FillListWithAirlineFleetInfo(AirlineModelExtended extendedAirlineModel, ref WeightedList<AirlineFleetMember> fleetMembersWeighted)
@@ -150,7 +256,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
             fleetMember.CanDispatchAdditionalAircraft() &&
             fleetMember.CanOperateFromPlayerAirportStands(chanceToOfferRegaurdless);
     }
-    public float SuitabilityForRoute(AirlineFleetMember fleetMember, RouteContainer routeThatIsPossible, bool isInternational, bool forceCargo = false)
+    public int SuitabilityForRoute(AirlineFleetMember fleetMember, RouteContainer routeThatIsPossible, bool isInternational, bool forceCargo = false)
     {
         float rangecap;
         bool cargo = fleetMember.AircraftModel.maxPax == 0 ? true : forceCargo;
@@ -226,7 +332,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
         if (suitability == float.NaN)
         {
             Debug.LogError("ACEO Tweaks | ERROR: Route Suitability is NaN! Info: aircraft = " + fleetMember.AircraftName + ", range utilization = " + rangeUtilization + "sizeMismatch = " + sizeMismatch);
-            return 0f;
+            return 0;
         }
 
         if (isInternational)
@@ -236,6 +342,6 @@ class NationalityFlightGenerator : FlightGeneratorBase
             suitability *= airportSize < (int)Enums.GenericSize.Medium ? 0.75f : 1f;
         }
 
-        return (suitability + UnityEngine.Random.Range(-0.2f*suitability,0.2f*suitability));
+        return Utils.RoundToIntLikeANormalPerson((suitability + UnityEngine.Random.Range(-0.2f*suitability,0.2f*suitability)) * 1000);
     }    
 }
