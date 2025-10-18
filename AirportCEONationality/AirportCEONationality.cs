@@ -11,14 +11,12 @@ using BepInEx.Logging;
 namespace AirportCEONationality
 {
 
-    [BepInPlugin(GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
+    [BepInPlugin("org.airportceonationality.zeke", PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
     [BepInDependency("org.airportceomodloader.humoresque")]
     [BepInIncompatibility("org.airportceotweaks.zeke")]
     [BepInDependency("org.airportceotweakscore.zeke")]
     public class AirportCEONationality : BaseUnityPlugin
     {
-        public const string GUID = "org.airportceonationality.zeke";
-
         public static AirportCEONationality Instance { get; private set; }
         internal static Harmony Harmony { get; private set; }
         internal static ManualLogSource TweaksLogger { get; private set; }
@@ -26,8 +24,8 @@ namespace AirportCEONationality
 
         private void Awake()
         {
-            Logger.LogInfo($"Plugin {GUID} is loaded!");
-            Harmony = new Harmony(GUID);
+            Logger.LogInfo($"Plugin {PluginInfo.PLUGIN_GUID} is loaded!");
+            Harmony = new Harmony(PluginInfo.PLUGIN_GUID);
             Harmony.PatchAll();
 
             Instance = this;
@@ -35,9 +33,9 @@ namespace AirportCEONationality
             ConfigReference = Config;
 
             // Config
-            Logger.LogInfo($"{GUID} is setting up config.");
+            Logger.LogInfo($"{PluginInfo.PLUGIN_GUID} is setting up config.");
             AirportCEONationalityConfig.SetUpConfig();
-            Logger.LogInfo($"{GUID} finished setting up config.");
+            Logger.LogInfo($"{PluginInfo.PLUGIN_GUID} finished setting up config.");
 
             GameObject child = Instantiate(new GameObject());
             child.transform.SetParent(null);

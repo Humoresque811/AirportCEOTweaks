@@ -55,6 +55,9 @@ public class RouteGenerationController : MonoBehaviour
 		yield return new WaitForSecondsRealtime(0.5f);
 
 		Init(TravelController.airports, TravelController.cities, TravelController.countries, TravelController.continents);
+
+		CoroutineEventDispatcher.GetTextUpdater()("AirportCEO Tweaks - Done", 100);
+		yield return null;
 	}
 
 	public void Init(Airport[] airports, City[] cities, Country[] countries, Continent[] continents)

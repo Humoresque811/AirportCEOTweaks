@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.Linq;
 using AirportCEOTweaksCore;
 using KaimiraGames;
 using UnityEngine;
-using UnityEngine.UIElements.Experimental;
-using static Enums;
 
 namespace AirportCEONationality;
 
@@ -15,6 +14,35 @@ class NationalityFlightGenerator : FlightGeneratorBase
 
     private static SortedSet<RouteContainer> routesToSearch; // Just to save the memory, no need to constantly reallocate
     private static WeightedList<RouteContainer> finalRouteOptions;
+
+    public static IEnumerator ToggleGeneratorCoroutine()
+    {
+        ToggleGenerator(AirportCEONationalityConfig.EnableNationalityFlightGeneration.Value);
+        yield break;
+    }
+    public static void ToggleGenerator()
+    {
+        ToggleGenerator(AirportCEONationalityConfig.EnableNationalityFlightGeneration.Value);
+    }
+    public static void ToggleGenerator(object _, EventArgs __)
+    {
+        ToggleGenerator(AirportCEONationalityConfig.EnableNationalityFlightGeneration.Value);
+    }
+    public static void ToggleGenerator(bool value)
+    {
+        if (ModsController.Instance == null)
+        {
+            return;
+        }
+
+        if (value)
+        {
+            ModsController.Instance.flightGenerator = new NationalityFlightGenerator();
+            return;
+        }
+
+        ModsController.Instance.ResetFlightGenerator();
+    }
 
     public override bool GenerateFlightModel(AirlineModel airlineModel, bool isEmergency, bool isAmbulance, out List<CommercialFlightModel> commercialFlightModels)
     {

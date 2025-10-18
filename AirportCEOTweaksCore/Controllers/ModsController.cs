@@ -23,10 +23,16 @@ namespace AirportCEOTweaksCore
 
             if (flightGenerator == null)
             {
-                flightGenerator = new DefaultFlightGenerator();
+                ResetFlightGenerator();
             }
             serveAircraftTypeChecks = new List<IServeAircraftTypeCheck> { new ServeAircraftByDLCCheck() , new ServeAircraftByRunwaySizeCheck() , new ServeAircraftByStandSizeCheck() };
         }
+
+        public void ResetFlightGenerator()
+        {
+            flightGenerator = new DefaultFlightGenerator();
+        }
+
         public List<string> LiveryGroupWords()
         {
             List<string> groups = new List<string>();
