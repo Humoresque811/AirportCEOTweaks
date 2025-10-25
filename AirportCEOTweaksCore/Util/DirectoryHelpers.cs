@@ -137,6 +137,7 @@ public static class DirectoryHelpers
     static List<string> FindDirectoriesWithJsonSubdirectories(string parentDir)
     {
         var result = new List<string>();
+        bool foundJsonAtThisLevel = false;
 
         try
         {
@@ -151,16 +152,18 @@ public static class DirectoryHelpers
                 if (jsonFiles.Length > 0)
                 {
                     // This subdirectory contains JSON files, so the parent is what we want
+                    if (!foundJsonAtThisLevel)
+                    {
                     LogInfo($"Found directory with JSON subdirectories: {SafeDirectoryLog(parentDir)}");
                     result.AddIfNotContains(parentDir);
-                    break; // Found what we need for this parent, no need to check other subdirs
+                        foundJsonAtThisLevel = true;
                 }
-                else
-                {
-                    // No JSON files in this subdirectory, check recursively
+                }
+
+                // Always continue recursively to find nested structures
+                // This ensures we don't miss cases where both current level AND deeper levels have JSON
                     var deeperResults = FindDirectoriesWithJsonSubdirectories(subDir);
                     result.AddRange(deeperResults);
-                }
             }
         }
         catch (Exception ex)
