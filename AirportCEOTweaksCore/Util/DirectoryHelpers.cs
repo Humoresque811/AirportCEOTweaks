@@ -110,7 +110,12 @@ public static class DirectoryHelpers
     /// <param name="directory"></param>
     public static string SafeDirectoryLog(string directory)
     {
-        return directory.Replace(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "$USERPROFILE$");
+        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+        directory = directory.Replace('\\', '/');
+        userProfile = userProfile.Replace('\\', '/');
+
+        return directory.Replace(userProfile, "$USERPROFILE$");
     }
 
 
