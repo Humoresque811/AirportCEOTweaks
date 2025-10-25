@@ -15,31 +15,45 @@ public static class DirectoryHelpers
     {
         get
         {
+            var value = AirportCEOTweaksCoreConfig.CustomWorkshopPath.Value;
+            if (value != null || value != "" || value != _workshopPath)
+            {
+                return value;
+            }
+
             if (_workshopPath == null)
             {
-                try
-                {
-                    AppId_t appId = SteamUtils.GetAppID();
-                    string installDir;
-                    // allocate a big enough buffer
-                    SteamApps.GetAppInstallDir(appId, out installDir, 4096);
-
-                    if (!string.IsNullOrEmpty(installDir))
-                    {
-                        // go up to the library root and build the workshop path
-                        var libraryRoot = Directory.GetParent(Directory.GetParent(installDir)?.FullName ?? "")?.Parent?.FullName;
-                        if (!string.IsNullOrEmpty(libraryRoot))
-                            _workshopPath = Path.Combine(libraryRoot, "steamapps", "workshop", "content", appId.ToString());
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LogError($"Failed to get Workshop path: {ex.Message}");
-                }
+                _workshopPath = GetWorkshopPath();
             }
 
             return _workshopPath;
         }
+    }
+
+    public static string? GetWorkshopPath()
+    {
+        try
+        {
+            AppId_t appId = SteamUtils.GetAppID();
+            string installDir;
+            // allocate a big enough buffer
+            SteamApps.GetAppInstallDir(appId, out installDir, 4096);
+
+            if (!string.IsNullOrEmpty(installDir))
+            {
+                // go up to the library root and build the workshop path
+                var libraryRoot = Directory.GetParent(Directory.GetParent(installDir)?.FullName ?? "")?.Parent?.FullName;
+                if (!string.IsNullOrEmpty(libraryRoot))
+                {
+                    return Path.Combine(libraryRoot, "steamapps", "workshop", "content", appId.ToString());
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            LogError($"Failed to get Workshop path: {ex.Message}");
+        }
+        return null;
     }
 
 
@@ -154,16 +168,16 @@ public static class DirectoryHelpers
                     // This subdirectory contains JSON files, so the parent is what we want
                     if (!foundJsonAtThisLevel)
                     {
-                    LogInfo($"Found directory with JSON subdirectories: {SafeDirectoryLog(parentDir)}");
-                    result.AddIfNotContains(parentDir);
+                        LogInfo($"Found directory with JSON subdirectories: {SafeDirectoryLog(parentDir)}");
+                        result.AddIfNotContains(parentDir);
                         foundJsonAtThisLevel = true;
-                }
+                    }
                 }
 
                 // Always continue recursively to find nested structures
                 // This ensures we don't miss cases where both current level AND deeper levels have JSON
-                    var deeperResults = FindDirectoriesWithJsonSubdirectories(subDir);
-                    result.AddRange(deeperResults);
+                var deeperResults = FindDirectoriesWithJsonSubdirectories(subDir);
+                result.AddRange(deeperResults);
             }
         }
         catch (Exception ex)

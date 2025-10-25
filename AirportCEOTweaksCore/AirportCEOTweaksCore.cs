@@ -37,10 +37,7 @@ namespace AirportCEOTweaksCore
             TweaksLogger = Logger;
             ConfigReference = Config;
 
-            // Config
-            Logger.LogInfo($"{GUID} is setting up config.");
-            AirportCEOTweaksCoreConfig.SetUpConfig();
-            Logger.LogInfo($"{GUID} finished setting up config.");
+
 
             GameObject child = Instantiate(new GameObject());
             child.transform.SetParent(null);
@@ -50,6 +47,11 @@ namespace AirportCEOTweaksCore
         private void Start()
         {
             ModLoaderInteractionHandler.SetUpInteractions();
+
+            // Config
+            Logger.LogInfo($"{GUID} is setting up config.");
+            AirportCEOTweaksCoreConfig.SetUpConfig();
+            Logger.LogInfo($"{GUID} finished setting up config.");
             LogInfo("Tweaks finished start");
         }
 
