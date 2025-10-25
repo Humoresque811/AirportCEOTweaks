@@ -1,17 +1,16 @@
 using UnityEngine;
 using BepInEx;
-using System;
-using System.Linq;
 using System.Collections.Generic;
 using HarmonyLib;
 using System.Reflection;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using AirportCEOTweaksCore.JsonValidate;
 
 namespace AirportCEOTweaksCore
 {
 
-    [BepInPlugin(GUID,PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
+    [BepInPlugin(GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
     [BepInDependency("org.airportceomodloader.humoresque")]
     [BepInIncompatibility("org.airportceotweaks.zeke")]
     public class AirportCEOTweaksCore : BaseUnityPlugin
@@ -53,6 +52,13 @@ namespace AirportCEOTweaksCore
             ModLoaderInteractionHandler.SetUpInteractions();
             LogInfo("Tweaks finished start");
         }
+
+        private void Update()
+        {
+            ManualJsonValidating.ValidateJson();
+        }
+
+
 
         // This is code for BepInEx logging, which Tweaks doesn't really use. Here if nessesary
         internal static void Log(string message) => LogInfo(message);
