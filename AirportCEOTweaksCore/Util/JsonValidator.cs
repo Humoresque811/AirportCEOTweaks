@@ -17,7 +17,7 @@ public static class JsonValidator
     /// <returns>True if all JSON files are valid, false if any are invalid or missing</returns>
     public static bool ValidateAllJsonInDirectory(string filePath)
     {
-        Debug.Log($"[JSON Validator] Starting validation for path: {filePath}");
+        Log($"Starting validation for path: {DirectoryHelpers.SafeDirectoryLog(filePath)}");
 
         // Normalize path separators
         filePath = filePath.Replace("\\", "/");
@@ -25,7 +25,7 @@ public static class JsonValidator
         // Verify directory exists
         if (!Directory.Exists(filePath))
         {
-            Debug.LogWarning($"[JSON Validator] Directory does not exist: {filePath}");
+            LogWarning($"Directory does not exist: {DirectoryHelpers.SafeDirectoryLog(filePath)}");
             return false;
         }
 
@@ -34,7 +34,7 @@ public static class JsonValidator
 
         if (directories.Length == 0)
         {
-            Debug.LogWarning($"[JSON Validator] No subdirectories found in: {filePath}");
+            LogWarning($"No subdirectories found in: {DirectoryHelpers.SafeDirectoryLog(filePath)}");
             return false;
         }
 
@@ -49,7 +49,7 @@ public static class JsonValidator
 
             if (jsonFiles.Length == 0)
             {
-                Debug.LogWarning($"[JSON Validator] No JSON found in: {dir}");
+                LogWarning($"No JSON found in: {DirectoryHelpers.SafeDirectoryLog(dir)}");
                 missingCount++;
                 continue;
             }
@@ -67,7 +67,7 @@ public static class JsonValidator
         }
 
         bool allValid = invalidCount == 0 && missingCount == 0 && validCount > 0;
-        Debug.Log($"[JSON Validator] Validation complete for {filePath}: {validCount} valid, {invalidCount} invalid, {missingCount} missing - Result: {(allValid ? "PASS" : "FAIL")}");
+        Log($"Validation complete for {DirectoryHelpers.SafeDirectoryLog(filePath)}: {validCount} valid, {invalidCount} invalid, {missingCount} missing - Result: {(allValid ? "PASS" : "FAIL")}");
         return allValid;
     }
 
@@ -84,7 +84,7 @@ public static class JsonValidator
 
             if (string.IsNullOrEmpty(content))
             {
-                Debug.LogError($"[JSON Validator] Invalid JSON: {jsonFile} — File is empty");
+                LogError($"Invalid JSON: {DirectoryHelpers.SafeDirectoryLog(jsonFile)} — File is empty");
                 return false;
             }
 
@@ -95,19 +95,22 @@ public static class JsonValidator
             // Ensure data was actually parsed
             if (liveryData == null)
             {
-                Debug.LogError($"[JSON Validator] Invalid JSON: {jsonFile} — Deserialization returned null");
+                LogError($"Invalid JSON: {DirectoryHelpers.SafeDirectoryLog(jsonFile)} — Deserialization returned null");
                 return false;
             }
 
-            Debug.Log($"[JSON Validator] Valid JSON: {jsonFile}");
             return true;
         }
         catch (Exception ex)
         {
-            Debug.LogError($"[JSON Validator] Invalid JSON: {jsonFile} — {ex.Message}");
+            LogError($"Invalid JSON: {DirectoryHelpers.SafeDirectoryLog(jsonFile)} — {ex.Message}");
             return false;
         }
     }
+
+    static void Log(string message) => AirportCEOTweaksCore.Log($"[JSON Validator] {message}");
+    static void LogError(string message) => AirportCEOTweaksCore.LogError($"[JSON Validator] {message}");
+    static void LogWarning(string message) => AirportCEOTweaksCore.LogWarning($"[JSON Validator] {message}");
 }
 
 
