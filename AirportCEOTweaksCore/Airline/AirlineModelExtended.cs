@@ -10,6 +10,7 @@ using Unity;
 using HarmonyLib.Tools;
 using System.Reflection;
 using Random = UnityEngine.Random;
+using AirportCEOModLoader.Core;
 
 namespace AirportCEOTweaksCore
 {
@@ -52,15 +53,15 @@ namespace AirportCEOTweaksCore
 
         public AirlineModelExtended(Airline airline, ref AirlineModel airlineModel) : base(airline)
         {
-            if (airline == null) 
-            { 
-                Debug.LogError("ERROR: Airline Model Extended ctor encountered airline == null!"); 
-                return; 
+            if (airline == null)
+            {
+                Debug.LogError("ERROR: Airline Model Extended ctor encountered airline == null!");
+                return;
             }
-            if (Singleton<ModsController>.Instance == null) 
-            { 
-                Debug.LogError("ERROR: Airline Model Extended ctor encountered ModsController == null!"); 
-                return; 
+            if (Singleton<ModsController>.Instance == null)
+            {
+                Debug.LogError("ERROR: Airline Model Extended ctor encountered ModsController == null!");
+                return;
             }
 
             ParentModel = airlineModel;
@@ -74,7 +75,7 @@ namespace AirportCEOTweaksCore
             }
             else
             {
-                Debug.LogWarning("ACEO Tweaks WARN: No airlinebusinessdata path for "+businessName);
+                Debug.LogWarning("ACEO Tweaks WARN: No airlinebusinessdata path for " + businessName);
             }
 
             airlineModel = this;
@@ -82,9 +83,14 @@ namespace AirportCEOTweaksCore
             Singleton<BusinessController>.Instance.AddToBusinessList(this);
 
             MakeUpdateFleet();
-            HomeCountries = airlineBusinessData.arrayHomeCountryCodes.Length == 0 ? CountryRetriever(new string[] { airline.countryCode }) : CountryRetriever(airlineBusinessData.arrayHomeCountryCodes);
-
-
+            if (airlineBusinessData.arrayHomeCountryCodes == null || airlineBusinessData.arrayHomeCountryCodes.Length == 0)
+            {
+                HomeCountries = CountryRetriever([airline.countryCode]);
+            }
+            else
+            {
+                HomeCountries = CountryRetriever(airlineBusinessData.arrayHomeCountryCodes);
+            }
         }
 
 
@@ -103,103 +109,121 @@ namespace AirportCEOTweaksCore
 
         private void MakeUpdateFleet()
         {
-            //Replace Fleet with TweaksFleet
-            if (airlineBusinessData.tweaksFleet == null || airlineBusinessData.tweaksFleet.Length <= 0)
+            try
             {
-                Debug.Log("ACEO Tweaks | Debug - Airline " + businessName + " tweaksFleet is null or 0");
-                
-                if (airlineBusinessData.fleet != null && airlineBusinessData.fleet.Length > 0)
+
+                //Replace Fleet with TweaksFleet
+                if (airlineBusinessData.tweaksFleet == null || airlineBusinessData.tweaksFleet.Length <= 0)
                 {
-                    List<string> FleetList = airlineBusinessData.fleet.ToList();
+                    Debug.Log("ACEO Tweaks | Debug - Airline " + businessName + " tweaksFleet is null or 0");
 
-                    List<string> AllTypesList = new List<string>();
-                    foreach (AircraftModel aircraftModel in Singleton<AirTrafficController>.Instance.aircraftModels)
+                    if (airlineBusinessData.fleet != null && airlineBusinessData.fleet.Length > 0)
                     {
-                        AllTypesList.Add(aircraftModel.aircraftType);
-                    }
+                        List<string> FleetList = airlineBusinessData.fleet.ToList();
 
-                    for (int i = 0; i < FleetList.Count;)
-                    {
-                        if (AllTypesList.Contains(FleetList[i]))
+                        List<string> AllTypesList = new List<string>();
+                        foreach (AircraftModel aircraftModel in Singleton<AirTrafficController>.Instance.aircraftModels)
                         {
-                            i++;
+                            AllTypesList.Add(aircraftModel.aircraftType);
                         }
-                        else
+
+                        for (int i = 0; i < FleetList.Count;)
                         {
-                            FleetList.RemoveAt(i);
-                            if (i >= FleetList.Count)
+                            if (AllTypesList.Contains(FleetList[i]))
                             {
-                                break;
+                                i++;
+                            }
+                            else
+                            {
+                                FleetList.RemoveAt(i);
+                                if (i >= FleetList.Count)
+                                {
+                                    break;
+                                }
                             }
                         }
+
+                        aircraftFleetModels = airlineBusinessData.fleet;
                     }
-
-                    aircraftFleetModels = airlineBusinessData.fleet;
                 }
-            }
-            else
-            {
-                List<string> FleetList = airlineBusinessData.tweaksFleet.ToList();
-                List<AircraftModel> AllTypesList = ((AircraftModel[])typeof(AirTrafficController).GetField("aircraftModels", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(Singleton<AirTrafficController>.Instance)).ToList();
-
-                int i = 0;
-                OuterTweaksLoop:
-                for (;i < FleetList.Count;)
+                else
                 {
-                    
-                    foreach (AircraftModel aircraftModel in AllTypesList)
+                    List<string> FleetList = airlineBusinessData.tweaksFleet.ToList();
+                    List<AircraftModel> AllTypesList = Singleton<AirTrafficController>.Instance.aircraftModels.ToList();
+                    //((AircraftModel[])typeof(AirTrafficController).GetField("aircraftModels", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(Singleton<AirTrafficController>.Instance)).ToList();
+
+                    int i = 0;
+                    OuterTweaksLoop:
+                    for (; i < FleetList.Count;)
                     {
-                        if (aircraftModel.aircraftType == FleetList[i] && AirTrafficController.OwnsDLCAircraft(FleetList[i]))
+
+                        foreach (AircraftModel aircraftModel in AllTypesList)
                         {
-                            i++;
-                            goto OuterTweaksLoop;
+                            if (aircraftModel.aircraftType == FleetList[i] && AirTrafficController.OwnsDLCAircraft(FleetList[i]))
+                            {
+                                i++;
+                                goto OuterTweaksLoop;
+                            }
                         }
+
+                        //if we get here it means we processed all types and didn't get a match
+                        FleetList.RemoveAt(i);
+                        if (i >= FleetList.Count)
+                        {
+                            break;
+                        }
+
                     }
 
-                    //if we get here it means we processed all types and didn't get a match
-                    FleetList.RemoveAt(i);
-                    if (i >= FleetList.Count)
+                    aircraftFleetModels = FleetList.ToArray();
+
+                    if (airlineBusinessData.tweaksFleetCount != null && airlineBusinessData.tweaksFleetCount.Length == aircraftFleetModels.Length)
                     {
-                        break;
+                        fleetCount = airlineBusinessData.tweaksFleetCount;
                     }
-
                 }
-                
-                aircraftFleetModels = FleetList.ToArray();
 
-                if (airlineBusinessData.tweaksFleetCount != null && airlineBusinessData.tweaksFleetCount.Length == aircraftFleetModels.Length)
+                // Create a fleet counts if none exists ........................................................................................
+
+                if (airlineBusinessData.tweaksFleetCount != null)
                 {
-                    fleetCount = airlineBusinessData.tweaksFleetCount;
+                    if (fleetCount == null || fleetCount.Length != aircraftFleetModels.Length)
+                    {
+                        fleetCount = new int[aircraftFleetModels.Length];
+                        for (int i = 0; i < fleetCount.Length; i++)
+                        {
+                            fleetCount[i] = 2 * ((int)businessClass);
+                        }
+
+                        // Its a struct - no in line edits to it apparently
+                        AirlineBusinessData newBusinessData = airlineBusinessData;
+                        newBusinessData.tweaksFleetCount = fleetCount;
+                        airlineBusinessData = newBusinessData;
+                    }
+                }
+
+                FleetModels = aircraftFleetModels; // airlineBusinessData.tweaksFleet == null ? ParentModel.aircraftFleetModels : airlineBusinessData.tweaksFleet;
+                FleetCounts = aircraftFleetModels.Length == airlineBusinessData.tweaksFleetCount.Length ? airlineBusinessData.tweaksFleetCount : ParentModel.fleetCount; // airlineBusinessData.tweaksFleet == null ? ParentModel.fleetCount : airlineBusinessData.tweaksFleetCount;
+
+                //FleetModels = airlineBusinessData.tweaksFleet.Length == 0 ? ParentModel.flightList.ToArray() : airlineBusinessData.tweaksFleet;
+                //FleetCounts = airlineBusinessData.tweaksFleetCount.Length == 0 ? ParentModel.fleetCount : airlineBusinessData.tweaksFleetCount;
+
+                AirlineFleetMembersDictionary = new SortedDictionary<int, AirlineFleetMember>();
+
+                for (int i = 0; i < FleetModels.Length; i++)
+                {
+                    AirlineFleetMember member = new AirlineFleetMember(ParentModel, FleetModels[i], FleetCounts[i]);
+
+                    if (member.ErrorFlag)
+                    {
+                        continue;
+                    }
+                    AirlineFleetMembersDictionary.Add(i, member);
                 }
             }
-
-            // Create a fleet counts if none exists ........................................................................................
-
-            if (airlineBusinessData.tweaksFleetCount != null)
+            catch (Exception ex)
             {
-                if (fleetCount == null || fleetCount.Length != aircraftFleetModels.Length)
-                {
-                    fleetCount = new int[aircraftFleetModels.Length];
-                    for (int i = 0; i < fleetCount.Length; i++)
-                    {
-                        fleetCount[i] = 2 * ((int)businessClass);
-                    }
-
-                    // Its a struct - no in line edits to it apparently
-                    AirlineBusinessData newBusinessData = airlineBusinessData;
-                    newBusinessData.tweaksFleetCount = fleetCount;
-                    airlineBusinessData = newBusinessData;
-                }
-            }
-
-            FleetModels = airlineBusinessData.tweaksFleet.Length == 0 ? ParentModel.flightList.ToArray() : airlineBusinessData.tweaksFleet;
-            FleetCounts = airlineBusinessData.tweaksFleetCount.Length == 0 ? ParentModel.fleetCount : airlineBusinessData.tweaksFleetCount;
-
-            AirlineFleetMembersDictionary = new SortedDictionary<int, AirlineFleetMember>();
-
-            for (int i = 0; i < FleetModels.Length; i++)
-            {
-                AirlineFleetMembersDictionary.Add(i, new AirlineFleetMember(ParentModel, FleetModels[i], FleetCounts[i]));
+                AirportCEOTweaksCore.LogError($"Failed to create tweaks fleet. {ExceptionUtils.ProccessException(ex)}");
             }
         }
 
@@ -219,7 +243,7 @@ namespace AirportCEOTweaksCore
         //    }
 
         //    float pick = Random.Range(0, counter);
-            
+
         //    foreach (float number in lotto.Keys)
         //    {
         //        if (number >= pick)

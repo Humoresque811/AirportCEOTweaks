@@ -12,8 +12,8 @@ class NationalityFlightGenerator : FlightGeneratorBase
 {
     public override string GeneratorName => typeof(NationalityFlightGenerator).Name;
 
-    private static SortedSet<RouteContainer> routesToSearch; // Just to save the memory, no need to constantly reallocate
-    private static WeightedList<RouteContainer> finalRouteOptions;
+    private static SortedSet<RouteContainer> routesToSearch = new(); // Just to save the memory, no need to constantly reallocate
+    private static WeightedList<RouteContainer> finalRouteOptions = new();
 
     public static IEnumerator ToggleGeneratorCoroutine()
     {
@@ -114,7 +114,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
         }
 
         // Main loop!
-        commercialFlightModels = new();
+(        commercialFlightModels = new();
         do
         {
             routesToSearch.Clear();
@@ -187,7 +187,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
                     bool airportIsInHomeCodes = false;
                     foreach (Country country in airlineHomeCountries)
                     {
-                        if (!TravelController.IsDomesticAirport(inboundRoute.Airport, country))
+                        if (inboundRoute.Airport.Country != country) // Specifically ignoring Schengen here!
                         {
                             continue;
                         }
@@ -199,6 +199,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
                     {
                         continue;
                     }
+
 
                     finalRouteOptions.Add(inboundRoute, SuitabilityForRoute(fleetMemberToUse, inboundRoute, true));
                 }
