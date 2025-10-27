@@ -1,17 +1,16 @@
 using UnityEngine;
 using BepInEx;
-using System;
-using System.Linq;
 using System.Collections.Generic;
 using HarmonyLib;
 using System.Reflection;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using AirportCEOTweaksCore.JsonValidate;
 
 namespace AirportCEOTweaksCore
 {
 
-    [BepInPlugin(GUID,PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
+    [BepInPlugin(GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
     [BepInDependency("org.airportceomodloader.humoresque")]
     [BepInIncompatibility("org.airportceotweaks.zeke")]
     public class AirportCEOTweaksCore : BaseUnityPlugin
@@ -38,10 +37,7 @@ namespace AirportCEOTweaksCore
             TweaksLogger = Logger;
             ConfigReference = Config;
 
-            // Config
-            Logger.LogInfo($"{GUID} is setting up config.");
-            AirportCEOTweaksCoreConfig.SetUpConfig();
-            Logger.LogInfo($"{GUID} finished setting up config.");
+
 
             GameObject child = Instantiate(new GameObject());
             child.transform.SetParent(null);
@@ -51,8 +47,20 @@ namespace AirportCEOTweaksCore
         private void Start()
         {
             ModLoaderInteractionHandler.SetUpInteractions();
+
+            // Config
+            Logger.LogInfo($"{GUID} is setting up config.");
+            AirportCEOTweaksCoreConfig.SetUpConfig();
+            Logger.LogInfo($"{GUID} finished setting up config.");
             LogInfo("Tweaks finished start");
         }
+
+        private void Update()
+        {
+            ManualJsonValidating.ValidateJson();
+        }
+
+
 
         // This is code for BepInEx logging, which Tweaks doesn't really use. Here if nessesary
         internal static void Log(string message) => LogInfo(message);
