@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace Tweaks_PerformanceCEO.RAMReducer
 {
-
+    /*
     public static class Tweaks_RAMReducerManager
     {
         public static bool TweaksAircraftCall = false;
@@ -33,5 +33,6 @@ namespace Tweaks_PerformanceCEO.RAMReducer
                 Debug.LogError($"ACEO Tweaks | ERROR: Error occured while reducing RAM usage (Patch_RAMReducerApplier). Error: {ex.Message}");
             }
         }
-    }  
+    } 
+    */
 }
