@@ -238,12 +238,6 @@ namespace AirportCEOAircraft
         {
             GameObject perfCEOGameObject = GameObject.Find("PerformanceCEOActive");
 
-<<<<<<< HEAD
-            
-=======
-            //Tweaks_PerformanceCEO.RAMReducer.Tweaks_RAMReducerManager.TweaksAircraftCall = true;
->>>>>>> main
-
             string filePath = aircraftTypeData.filePath.Replace("\\", "/");
 
             string[] jsonFiles = Directory.GetFiles(filePath, "*_Visual.json");
@@ -347,14 +341,6 @@ namespace AirportCEOAircraft
                 if (obj == null) { continue; }
                 lac.DoLiveryComponentActions(obj);
             }
-
-
-<<<<<<< HEAD
-            
-=======
-            //Tweaks_PerformanceCEO.RAMReducer.Tweaks_RAMReducerManager.TweaksAircraftCall = false;
->>>>>>> main
-
 
         }
 
