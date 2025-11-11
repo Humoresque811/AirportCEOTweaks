@@ -30,7 +30,7 @@ namespace AirportCEOAircraft
             {
                 // Ex: "Now loading helicopter H130"
                 // TODO uncomment when working on helicopters
-                //AirportCEOAircraft.TweaksLogger.LogInfo($"Now loading {(aircraftTypeData.helicopter ? helicopterText : aircraftText)} {aircraftTypeData.Id}");
+                AirportCEOAircraft.TweaksLogger.LogInfo($"Now loading {aircraftText} {aircraftTypeData.Id}"); // {(aircraftTypeData.helicopter ? helicopterText : aircraftText)} {aircraftTypeData.Id}");
 
                 for (int i = 0; i < aircraftTypeData.id.Length; i++)
                 {
@@ -238,7 +238,11 @@ namespace AirportCEOAircraft
         {
             GameObject perfCEOGameObject = GameObject.Find("PerformanceCEOActive");
 
+<<<<<<< HEAD
             
+=======
+            //Tweaks_PerformanceCEO.RAMReducer.Tweaks_RAMReducerManager.TweaksAircraftCall = true;
+>>>>>>> main
 
             string filePath = aircraftTypeData.filePath.Replace("\\", "/");
 
@@ -345,7 +349,11 @@ namespace AirportCEOAircraft
             }
 
 
+<<<<<<< HEAD
             
+=======
+            //Tweaks_PerformanceCEO.RAMReducer.Tweaks_RAMReducerManager.TweaksAircraftCall = false;
+>>>>>>> main
 
 
         }

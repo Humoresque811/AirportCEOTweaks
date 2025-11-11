@@ -5,7 +5,7 @@
     <AssemblyName>AirportCEOTweaksCore</AssemblyName>
 	<Product>AirportCEOTweaksCore</Product>
     <Description></Description>
-	<Version>3.1.1</Version>
+	<Version>3.1.2</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <RestoreAdditionalProjectSources>
@@ -16,10 +16,6 @@
     <Authors>Ezekiel Ward</Authors>
     <Company />
 	<ComVisible>false</ComVisible>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <OutputPath>C:\Program Files (x86)\Steam\steamapps\common\Airport CEO\BepInEx\plugins\</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
