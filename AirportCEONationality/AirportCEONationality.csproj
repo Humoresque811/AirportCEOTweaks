@@ -4,7 +4,7 @@
     <TargetFramework>net46</TargetFramework>
     <AssemblyName>AirportCEONationality</AssemblyName>
     <Description></Description>
-    <Version>3.2.1</Version>
+    <Version>3.2.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <RestoreAdditionalProjectSources>
@@ -14,10 +14,6 @@
     </RestoreAdditionalProjectSources>
     <Authors>Ezekiel Ward, Humoresque</Authors>
     <Company />
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <OutputPath>C:\Program Files (x86)\Steam\steamapps\common\Airport CEO\BepInEx\plugins\</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>

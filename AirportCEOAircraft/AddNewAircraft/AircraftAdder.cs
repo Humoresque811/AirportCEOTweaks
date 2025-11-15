@@ -300,9 +300,7 @@ namespace AirportCEOAircraft
                 liveryComponent.ClampValues(new Vector2((float)texture2D.width, (float)texture2D.height));
                 if (lhs == Vector2.zero || lhs2 == Vector2.zero || lhs != liveryComponent.slicePosition || lhs2 != liveryComponent.sliceSize)
                 {
-                    Tweaks_PerformanceCEO.RAMReducer.Tweaks_RAMReducerManager.TweaksAircraftCall = true;
                     spriteArray[j] = Sprite.Create(texture2D, new Rect(liveryComponent.slicePosition.x, liveryComponent.slicePosition.y, liveryComponent.sliceSize.x, liveryComponent.sliceSize.y), liveryComponent.pivot, liveryData.pixelSize, 0U, SpriteMeshType.FullRect);
-                    Tweaks_PerformanceCEO.RAMReducer.Tweaks_RAMReducerManager.TweaksAircraftCall = false;
                     lhs = liveryComponent.slicePosition;
                     lhs2 = liveryComponent.sliceSize;
                 }

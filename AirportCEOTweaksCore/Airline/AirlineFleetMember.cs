@@ -32,11 +32,21 @@ public class AirlineFleetMember
         NumberInFleet = fleetCount;
         ParentAirline = parent;
 
+        if (!CustomEnums.aircraftTypes.ContainsKey(aircraftString))
+        {
+            AirportCEOTweaksCore.LogWarning($"Aircraft \"{aircraftString}\" is not in directory, and therefore can't be generated. This might be because the user is playing with " +
+                $"Tweaks Aircraft but does not have all aircraft packs installed; this warning can be safely ignored if that is the case. Skipping creation of this {typeof(AirlineFleetMember).Name}");
+            ErrorFlag = true;
+            AircraftModel = null;
+            return;
+        }
+
         CustomEnums.TryGetAircraftType(aircraftString, out AircraftType type);
         _AircraftType = type;
 
         if (Singleton<AirTrafficController>.Instance.GetAircraftModel(_AircraftType.id) == null)
         {
+            AirportCEOTweaksCore.LogError($"Failed to fetch aircraft model when making fleet member. String aircraft: \"{aircraftString}\", type created: \"{_AircraftType.id}\""); // This is now an actual issue
             ErrorFlag = true;
             AircraftModel = null;
         }

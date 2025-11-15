@@ -70,36 +70,21 @@ class NationalityFlightGenerator : FlightGeneratorBase
 
 
         // Preselect route number ...............................................................................................
-
-        int maxFlightNumber = (((int)airlineModel.businessClass + 3) ^ 2) * 50 + Utils.RandomRangeI(100f, 200f);
-        int flightNumber = Utils.RandomRangeI(1f, maxFlightNumber);
-
-        // duplicate checking
-        for (int i = 0; ; i++)
+        if (!GenerateFlightNumber(airlineModel, out int flightNumber))
         {
-            if (Singleton<ModsController>.Instance.FlightsByFlightNumber(airlineModel, airlineModel.airlineFlightNbr + flightNumber).Count > 0)
-            {
-                flightNumber = Utils.RandomRangeI(1f, maxFlightNumber);
-                if (i > 200)
-                {
-                    Debug.LogWarning("ACEO Tweaks | WARN: Generate flight for " + airlineModel.businessName + " failed due to no available flight number");
-                    commercialFlightModels = null;
-                    return false;
-                }
-            }
-            else
-            {
-                break;
-            }
+            // Failed!
+            AirportCEONationality.LogWarning($"Generate flight for \"{airlineModel.businessName}\" failed due to no available flight number!");
+            commercialFlightModels = null;
+            return false;
         }
 
         // Main Loop/Loop Prep starts here .......................................................................................................................
         // Get data for decision
-        float maxRange = 0;
-        float minRange = float.MaxValue;
-        float desiredRange;
+        //float maxRange = 0;
+        //float minRange = float.MaxValue;
+        //float desiredRange;
         Country[] airlineHomeCountries = extendedAirlineModel.HomeCountries;
-        bool remainInHomeCountries = extendedAirlineModel.airlineBusinessData.remainWithinHomeCodes;
+        bool remainInHomeCountries = extendedAirlineModel.StayWithinHomeCountries;
         bool playerAirportInHomeCountries = airlineHomeCountries.Contains(GameDataController.GetUpdatedPlayerSessionProfileData().playerAirport.Country);
 
         // Initial aircraft data loaded
@@ -114,7 +99,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
         }
 
         // Main loop!
-(        commercialFlightModels = new();
+        commercialFlightModels = new();
         do
         {
             routesToSearch.Clear();
@@ -261,10 +246,35 @@ class NationalityFlightGenerator : FlightGeneratorBase
     private static void FillListWithAirlineFleetInfo(AirlineModelExtended extendedAirlineModel, ref WeightedList<AirlineFleetMember> fleetMembersWeighted)
     {
         fleetMembersWeighted.Clear();
-        foreach (AirlineFleetMember fleetMember in extendedAirlineModel.AirlineFleetMembersDictionary.Values)
+        foreach (AirlineFleetMember fleetMember in extendedAirlineModel.AirlineFleetMembers)
         {
             fleetMembersWeighted.Add(fleetMember, fleetMember.NumberInFleet);
         }
+    }
+
+    private static bool GenerateFlightNumber(AirlineModel airlineModel, out int flightNumber)
+    {
+        int maxFlightNumber = (((int)airlineModel.businessClass + 3) ^ 2) * 50 + Utils.RandomRangeI(100f, 200f);
+        flightNumber = Utils.RandomRangeI(1f, maxFlightNumber);
+
+        // duplicate checking
+        for (int i = 0; ; i++)
+        {
+            if (Singleton<ModsController>.Instance.FlightsByFlightNumber(airlineModel, airlineModel.airlineFlightNbr + flightNumber).Count > 0)
+            {
+                flightNumber = Utils.RandomRangeI(1f, maxFlightNumber);
+                if (i > 200)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return true;
     }
 
     public bool FleetMemberCanServeRoute(AirlineFleetMember fleetMember, RouteContainer route, float chanceToOfferRegaurdless = 0, bool debug = false)

@@ -34,7 +34,7 @@ namespace AirportCEOTweaksCore
 				((AirlineModelExtended)__instance).Refresh();
 				return;// true;
 			}
-			Debug.Log("Patch to extend " + __instance.businessName + " is triggered (Generate Flight)");
+			AirportCEOTweaksCore.LogDebug($"Patch to extend {__instance.businessName} triggered (from Generate Flight)");
 			__instance.ExtendAirlineModel(ref __instance);
 			//if (__instance as AirlineModelExtended != null) { ((AirlineModelExtended)__instance).Refresh(); return false; }
 			//else { Debug.LogError("AirlineModelExtended turned null before could refresh"); return true; }
