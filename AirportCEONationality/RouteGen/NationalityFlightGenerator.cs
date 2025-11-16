@@ -92,38 +92,22 @@ class NationalityFlightGenerator : FlightGeneratorBase
         FillListWithAirlineFleetInfo(extendedAirlineModel, ref fleetMembersWeighted);
 
         // Loop iteration variables
-        bool useDumbGeneration = false;
-        if (airlineHomeCountries == null)
+        commercialFlightModels = new();
+        if (airlineHomeCountries == null || airlineHomeCountries.Length == 0)
         {
-            useDumbGeneration = true;
+            return false; // Use vanilla!
         }
 
         // Main loop!
-        commercialFlightModels = new();
-        do
+        while (commercialFlightModels.Count == 0)
         {
             routesToSearch.Clear();
             finalRouteOptions.Clear();
 
-            if (fleetMembersWeighted.Count == 0)// && useDumbGeneration) // There are no appropriate routes for any member of this airlines fleet based on the settings!
+            if (fleetMembersWeighted.Count == 0) // There are no appropriate routes for any member of this airlines fleet based on the settings!
             {
                 return false;
-                //AirportCEONationality.LogWarning($"Airline mod \"{extendedAirlineModel.businessName}\" is unable to service given airport with any aircraft given custom settings!");
-                //if (AirportCEONationalityConfig.ForceGenerateRoutes.Value)
-                //{
-                //    useDumbGeneration = true;
-                //    FillListWithAirlineFleetInfo(extendedAirlineModel, ref fleetMembersWeighted);
-                //}
-                //else
-                //{
-                //    return false;
-                //}
             }
-            //else
-            //{
-            //    // If we can't generate a single aircraft flight with dumb generation, then what ????
-            //    throw new NotImplementedException("Handle case when dumb generation fails!!");
-            //}
 
             AirlineFleetMember fleetMemberToUse = fleetMembersWeighted.Next();
             fleetMembersWeighted.Remove(fleetMemberToUse);
@@ -159,7 +143,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
                     }
                     else
                     {
-                        if (remainInHomeCountries && !inboundRoute.VanillaDomestic)
+                        if (remainInHomeCountries)
                         {
                             continue;
                         }
@@ -234,7 +218,6 @@ class NationalityFlightGenerator : FlightGeneratorBase
                 commercialFlightModels.Add(commercialFlightModel);
             }
         }
-        while (commercialFlightModels.Count == 0);
 
         if (commercialFlightModels.Count > 0)
         {
@@ -295,6 +278,100 @@ class NationalityFlightGenerator : FlightGeneratorBase
             fleetMember.CanDispatchAdditionalAircraft() &&
             fleetMember.CanOperateFromPlayerAirportStands(chanceToOfferRegaurdless);
     }
+
+    public int SuitabilityForRoute(AirlineFleetMember fleetMember, RouteContainer routeThatIsPossible, bool isInternational)
+    {
+        float suitability = 1000;
+
+        suitability *= GetRangeSuitabilityModifier(routeThatIsPossible.Distance / fleetMember.RangeKM, fleetMember.AircraftModel.weightClass);
+        suitability *= GetSizeMismatchSuitabilityModifier(routeThatIsPossible.Airport.paxSize, fleetMember.AircraftSize, isInternational);
+        suitability *= GetEasternModifier(fleetMember, routeThatIsPossible);
+        suitability *= GetVintageModifier(fleetMember);
+        suitability *= GetInternationalModifier(routeThatIsPossible.Airport.paxSize, fleetMember.AircraftSize, isInternational);
+
+        return suitability.RoundToIntLikeANormalPerson();
+    }
+
+    private float GetRangeSuitabilityModifier(float rangeUtilization, Enums.ThreeStepScale weightClass)
+    {
+        // Don't understand the math? Look at Desmos for graphs: https://www.desmos.com/calculator/jpzbskk7ei
+        if (weightClass == Enums.ThreeStepScale.Small)
+        {
+            return 0.2f * Mathf.Pow(2, -20 * Mathf.Pow(rangeUtilization - 0.5f, 2)) + 0.8f;
+        }
+        else if (weightClass == Enums.ThreeStepScale.Medium)
+        {
+            return 0.2f * Mathf.Pow(2, -20 * Mathf.Pow(rangeUtilization - 0.8f, 2)) + 0.8f;
+        }
+        else
+        {
+            return 0.4f * Mathf.Pow(2, -20 * Mathf.Pow(rangeUtilization - 0.8f, 2)) + 0.6f;
+        }
+    }
+    private float GetSizeMismatchSuitabilityModifier(Enums.GenericSize airportSize, Enums.GenericSize flightSize, bool isInternational)
+    {
+        int difference = Math.Abs(airportSize - flightSize);
+
+        // Don't understand the math? Look at Desmos for graphs: https://www.desmos.com/calculator/jpzbskk7ei
+        if (!isInternational)
+        {
+            return -1f / (1 + Mathf.Pow(3, -1f * difference + 3.5f)) + 1;
+        }
+        else
+        {
+            return -1f / (1 + Mathf.Pow(3, -1.5f * difference + 3.5f)) + 1;
+        }
+    }
+
+    private float GetEasternModifier(AirlineFleetMember fleetMember, RouteContainer route)
+    {
+        // More likely from former USSR!
+        float suitability = 1f;
+        if (AirTrafficController.IsEastern(fleetMember.AircraftName) || fleetMember._AircraftType.id == "TU144")
+        {
+            bool ussr = false;
+            string[] codes = new string[] {"AM","AZ","BY","EE","GE","KZ","KG","LV","LT","MD","RU","TJ","TM","UA","UZ"};
+            foreach(string code in codes)
+            {
+                ussr = code == route.country.countryCode ? true : ussr;
+                ussr = code == GameDataController.GetUpdatedPlayerSessionProfileData().playerAirport.Country.countryCode ? true : ussr;
+                if (ussr) { break; }
+            }
+
+            if (!ussr)
+            {
+                suitability = 0.5f;
+            }
+        }  
+        return suitability;
+    }
+
+    private float GetVintageModifier(AirlineFleetMember fleetMember)
+    {
+        bool isVintage = AirTrafficController.IsVintage(fleetMember.AircraftName);
+
+        if (AirportCEONationalityConfig.VintageGenerationMultiplier.Value <= 1)
+        {
+            return isVintage ? AirportCEONationalityConfig.VintageGenerationMultiplier.Value : 1f;
+        }
+
+        return isVintage ? 1f / AirportCEONationalityConfig.VintageGenerationMultiplier.Value : 1f;
+    }
+
+    private float GetInternationalModifier(Enums.GenericSize airportSize, Enums.GenericSize flightSize, bool isInternational)
+    {
+        if (!isInternational)
+        {
+            return 1;
+        }
+        if (airportSize.IsSmallerThan(Enums.GenericSize.Large) || flightSize.IsSmallerThan(Enums.GenericSize.Medium))
+        {
+            return 0.75f;
+        }
+
+        return 1;
+    }
+
     public int SuitabilityForRoute(AirlineFleetMember fleetMember, RouteContainer routeThatIsPossible, bool isInternational, bool forceCargo = false)
     {
         float rangecap;
