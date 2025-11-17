@@ -10,6 +10,10 @@ namespace AirportCEOTweaksCore
 {
     public class ModsController : Singleton<ModsController>
     {
+        public FlightGeneratorBase flightGenerator;
+
+        public List<IServeAircraftTypeCheck> serveAircraftTypeChecks;
+
         public Dictionary<string, AirlineBusinessData> airlineBusinessDataByBusinessName = new Dictionary<string, AirlineBusinessData>();
 
         private void Start()
@@ -17,7 +21,18 @@ namespace AirportCEOTweaksCore
 
             UpdateAirlineBuisinessDataDictionary();
 
+            if (flightGenerator == null)
+            {
+                ResetFlightGenerator();
+            }
+            serveAircraftTypeChecks = new List<IServeAircraftTypeCheck> { new ServeAircraftByDLCCheck() , new ServeAircraftByRunwaySizeCheck() , new ServeAircraftByStandSizeCheck() };
         }
+
+        public void ResetFlightGenerator()
+        {
+            flightGenerator = new DefaultFlightGenerator();
+        }
+
         public List<string> LiveryGroupWords()
         {
             List<string> groups = new List<string>();
@@ -71,6 +86,17 @@ namespace AirportCEOTweaksCore
             return verbs;
         }
 
+        public bool CanServeAircraftType(string type)
+        {
+            foreach (IServeAircraftTypeCheck checker in serveAircraftTypeChecks)
+            {
+                if (checker.CanServeType(type) == false)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
 
         private void UpdateAirlineBuisinessDataDictionary()
         {
@@ -148,6 +174,19 @@ namespace AirportCEOTweaksCore
                 }
             }
             AirportCEOTweaksCore.airlinePaths.Clear();
+        }
+
+        public HashSet<CommercialFlightModel> FlightsByFlightNumber(AirlineModel airline, string flightNumber)
+        {
+            HashSet<CommercialFlightModel> series = new HashSet<CommercialFlightModel>();
+            foreach (CommercialFlightModel commercialFlightModel in airline.flightListObjects)
+            {
+                if (commercialFlightModel != null && !commercialFlightModel.isCompleted && !commercialFlightModel.isEmergency && commercialFlightModel.departureFlightNbr.Equals(flightNumber))
+                {
+                    series.Add(commercialFlightModel);
+                }
+            }
+            return series;
         }
     }
 }
