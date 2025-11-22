@@ -10,7 +10,31 @@ namespace AirportCEONationality;
 
 class NationalityFlightGenerator : FlightGeneratorBase
 {
-    public override string GeneratorName => typeof(NationalityFlightGenerator).Name;
+    public override string GeneratorName => "Nationality Flight Generator";
+    public override bool GetErrorNote(AirlineModel model, out string message)
+    {
+        if (airlinesAlreadyShownError.Contains(model.businessName))
+        {
+            message = null;
+            return false;
+        }
+
+        string messageFilled = $"The ACEO Tweaks {GeneratorName} was unable to generate any realistic flights for {model.businessName}. The airline will now offer flights as per the vanilla game. " +
+            $"If you do not want this, consider canceling the contract.";
+        AirportCEONationality.LogDebug(messageFilled);
+        airlinesAlreadyShownError.Add(model.businessName);
+
+        if (AirportCEONationalityConfig.FallbackGenerationMode.Value != NationalityFallbackRule.FallbackVanillaNotify)
+        {
+            message = null;
+            return false;
+        }
+
+        message = messageFilled;
+        return true;
+    }
+
+    private static List<string> airlinesAlreadyShownError = new();
 
     private static SortedSet<RouteContainer> routesToSearch = new(); // Just to save the memory, no need to constantly reallocate
     private static WeightedList<RouteContainer> finalRouteOptions = new();
@@ -44,9 +68,11 @@ class NationalityFlightGenerator : FlightGeneratorBase
         ModsController.Instance.ResetFlightGenerator();
     }
 
-    public override bool GenerateFlightModel(AirlineModel airlineModel, bool isEmergency, bool isAmbulance, out List<CommercialFlightModel> commercialFlightModels)
+    public override void GenerateFlightModel(AirlineModel airlineModel, bool isEmergency, bool isAmbulance, out FlightGeneratorResults flightGeneratorResults)
     {
         AirlineModelExtended extendedAirlineModel = airlineModel.ExtendAirlineModel(ref airlineModel);
+        FlightGeneratorResultAction failureFallbackGenerationRule = 
+            AirportCEONationalityConfig.FallbackGenerationMode.Value == NationalityFallbackRule.DontGenerate ? FlightGeneratorResultAction.DontCreate : FlightGeneratorResultAction.UseVanillaGeneration;
 
         // Check Possible to Gen a Flight
         if (airlineModel.fleetCount.Length == 0)
@@ -55,8 +81,8 @@ class NationalityFlightGenerator : FlightGeneratorBase
             airlineModel.CancelContract();
             Debug.LogWarning("ACEO Tweaks | WARN: Airline " + airlineModel.businessName + "contract canceled due to no valid fleet!");
 
-            commercialFlightModels = null;
-            return true;
+            flightGeneratorResults = new(null, failureFallbackGenerationRule);
+            return;
         }
         if (airlineModel.aircraftFleetModels.Length == 0)
         {
@@ -64,8 +90,8 @@ class NationalityFlightGenerator : FlightGeneratorBase
             airlineModel.CancelContract();
             Debug.LogWarning("ACEO Tweaks | WARN: Airline " + airlineModel.businessName + "contract canceled due to no valid fleet!");
 
-            commercialFlightModels = null;
-            return true;
+            flightGeneratorResults = new(null, failureFallbackGenerationRule);
+            return;
         }
 
 
@@ -74,15 +100,11 @@ class NationalityFlightGenerator : FlightGeneratorBase
         {
             // Failed!
             AirportCEONationality.LogWarning($"Generate flight for \"{airlineModel.businessName}\" failed due to no available flight number!");
-            commercialFlightModels = null;
-            return false;
+            flightGeneratorResults = new(null, FlightGeneratorResultAction.DontCreate);
+            return;
         }
 
         // Main Loop/Loop Prep starts here .......................................................................................................................
-        // Get data for decision
-        //float maxRange = 0;
-        //float minRange = float.MaxValue;
-        //float desiredRange;
         Country[] airlineHomeCountries = extendedAirlineModel.HomeCountries;
         bool remainInHomeCountries = extendedAirlineModel.StayWithinHomeCountries;
         bool playerAirportInHomeCountries = airlineHomeCountries.Contains(GameDataController.GetUpdatedPlayerSessionProfileData().playerAirport.Country);
@@ -92,10 +114,11 @@ class NationalityFlightGenerator : FlightGeneratorBase
         FillListWithAirlineFleetInfo(extendedAirlineModel, ref fleetMembersWeighted);
 
         // Loop iteration variables
-        commercialFlightModels = new();
+        List<CommercialFlightModel> commercialFlightModels = new();
         if (airlineHomeCountries == null || airlineHomeCountries.Length == 0)
         {
-            return false; // Use vanilla!
+            flightGeneratorResults = new(null, failureFallbackGenerationRule);
+            return;
         }
 
         // Main loop!
@@ -106,7 +129,8 @@ class NationalityFlightGenerator : FlightGeneratorBase
 
             if (fleetMembersWeighted.Count == 0) // There are no appropriate routes for any member of this airlines fleet based on the settings!
             {
-                return false;
+                flightGeneratorResults = new(null, failureFallbackGenerationRule);
+                return;
             }
 
             AirlineFleetMember fleetMemberToUse = fleetMembersWeighted.Next();
@@ -221,9 +245,12 @@ class NationalityFlightGenerator : FlightGeneratorBase
 
         if (commercialFlightModels.Count > 0)
         {
-            return true;
+            flightGeneratorResults = new(commercialFlightModels, FlightGeneratorResultAction.AllocateFlights);
+            return;
         }
-        return false;
+
+        flightGeneratorResults = new(null, failureFallbackGenerationRule);
+        return;
     }
 
     private static void FillListWithAirlineFleetInfo(AirlineModelExtended extendedAirlineModel, ref WeightedList<AirlineFleetMember> fleetMembersWeighted)
@@ -255,7 +282,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
             {
                 break;
             }
-        }
+        } 
 
         return true;
     }

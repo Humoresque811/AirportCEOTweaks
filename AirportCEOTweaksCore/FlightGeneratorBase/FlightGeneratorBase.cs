@@ -9,20 +9,25 @@ public abstract class FlightGeneratorBase
 {
     // This is here to prevent a stack overflow infinite loop with the default flight generator. Keep as false unless specifically needed
     public virtual bool OverrideHarmonyPrefix { get; set; } = false;
+
     // Flight generator must provide the name
-    public abstract string GeneratorName { get; } 
+    public abstract string GeneratorName { get; }
+
+    // The error message to display if generation fails - if blank, then no additional info is printed
+    public virtual bool GetErrorNote(AirlineModel model, out string message)
+    {
+        message = null;
+        return false;
+    }
 
     // This takes out the usage of the flight model part from GenerateFlightModel(), ensuring more safety and making the purpose of the GenerateFlightModel() method far clearer
-    public bool GenerateFlight(AirlineModel airlineModel, bool isEmergency, bool isAmbulance)
+    public FlightGeneratorResultAction GenerateFlight(AirlineModel airlineModel, bool isEmergency, bool isAmbulance)
     {
-        if (GenerateFlightModel(airlineModel, isEmergency, isAmbulance, out List<CommercialFlightModel> flightModels))
-        {
-            if (flightModels == null)
-            {
-                return false;
-            }
+        GenerateFlightModel(airlineModel, isEmergency, isAmbulance, out FlightGeneratorResults flightGeneratorResults);
 
-            foreach (CommercialFlightModel flightModel in flightModels)
+        if (flightGeneratorResults.action == FlightGeneratorResultAction.AllocateFlights)
+        {
+            foreach (CommercialFlightModel flightModel in flightGeneratorResults.commercialFlightModels)
             {
 
                 if (Singleton<AirTrafficController>.Instance.referenceToFlight.ContainsKey(flightModel.referenceID))
@@ -36,12 +41,19 @@ public abstract class FlightGeneratorBase
                 airlineModel.flightList.Add(flightModel.referenceID);
                 airlineModel.flightListObjects.Add(flightModel);
             }
-            return true;
         }
 
-        return false;
+        if (flightGeneratorResults.action == FlightGeneratorResultAction.UseVanillaGeneration)
+        {
+            if (Singleton<ModsController>.Instance.flightGenerator.GetErrorNote(airlineModel, out string message))
+            {
+                AirportCEOModLoader.Core.DialogUtils.QueueDialog(message);
+            }
+        }
+
+        return flightGeneratorResults.action; // Pass forward the action so that the patch knows where to direct traffic
     }
 
     // Main thing that new implementations are going to need to focus on implementing
-    public abstract bool GenerateFlightModel(AirlineModel airlineModel, bool isEmergency, bool isAmbulance, out List<CommercialFlightModel> commercialFlightModel);
+    public abstract void GenerateFlightModel(AirlineModel airlineModel, bool isEmergency, bool isAmbulance, out FlightGeneratorResults flightGeneratorResults);
 }

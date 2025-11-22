@@ -53,19 +53,21 @@ namespace AirportCEOTweaksCore
             }
 
 			AirportCEOTweaksCore.LogDebug($"Generating Flight for \"{__instance.businessName}\"");
-			if (Singleton<ModsController>.Instance.flightGenerator.GenerateFlight(__instance, isEmergency, isAmbulance))
+			FlightGeneratorResultAction action = Singleton<ModsController>.Instance.flightGenerator.GenerateFlight(__instance, isEmergency, isAmbulance);
+			if (action == FlightGeneratorResultAction.AllocateFlights || action == FlightGeneratorResultAction.AlreadyAllocated) // Full success
             {
-				// A custom flight generator generated a flight and returned success 
-				AirportCEOTweaksCore.LogDebug("Custom flight generators GenerateFlight was true");
 				__result = true; // This matters only if we return false, now we assign it
 				return false;
             }
-			else
+			else if (action == FlightGeneratorResultAction.DontCreate) // Dont create, fail
             {
-				AirportCEOTweaksCore.LogDebug("Custom flight generators GenerateFlight was false");
-				return true;
+				__result = false;
+				return false;
             }
-			
+			else
+			{
+				return true; // continue with vanilla system!
+			}
 		}
 	}
 }
