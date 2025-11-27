@@ -5,6 +5,7 @@ using System.Linq;
 using AirportCEOTweaksCore;
 using KaimiraGames;
 using UnityEngine;
+using System.Text;
 
 namespace AirportCEONationality;
 
@@ -121,6 +122,9 @@ class NationalityFlightGenerator : FlightGeneratorBase
             return;
         }
 
+        RouteContainer DEBUG_routeContainer = null;
+        AirlineFleetMember DEBUG_fleetMember = null;
+        
         // Main loop!
         while (commercialFlightModels.Count == 0)
         {
@@ -204,6 +208,8 @@ class NationalityFlightGenerator : FlightGeneratorBase
             }
 
             RouteContainer route = finalRouteOptions.Next();
+            DEBUG_routeContainer = route;
+            DEBUG_fleetMember = fleetMemberToUse;
 
             Route inboundRouteF = new Route(route.route);
             Route outboundRouteF = new Route(inboundRouteF);
@@ -246,11 +252,33 @@ class NationalityFlightGenerator : FlightGeneratorBase
         if (commercialFlightModels.Count > 0)
         {
             flightGeneratorResults = new(commercialFlightModels, FlightGeneratorResultAction.AllocateFlights);
+            if (AirportCEONationalityConfig.ExtraDebugLogs.Value)
+            {
+                PrintDebugInfo(airlineModel, finalRouteOptions, DEBUG_routeContainer, DEBUG_fleetMember);
+            }
             return;
         }
 
         flightGeneratorResults = new(null, failureFallbackGenerationRule);
         return;
+    }
+
+    private static void PrintDebugInfo(AirlineModel model, WeightedList<RouteContainer> routes, RouteContainer flight, AirlineFleetMember member)
+    {
+        StringBuilder builder = new();
+        builder.Append($"Debug info for the generation of flights for airline \"{model.businessName}\", aircraft \"{member.AircraftName}\" [T-N Log ID 1]: ");
+        builder.AppendLine($"Chosen: Flight to {flight.Airport}, distance {flight.Distance}, with weight {routes.GetWeightOf(flight)}");
+        
+        builder.AppendLine("");
+        builder.AppendLine("All options & weights:");
+
+        for (int i = 0; i < routes.Count; i++)
+        {
+            builder.AppendLine($"Flight to {routes[i].Airport}, distance {routes[i].Distance}km has weight of {routes.GetWeightAtIndex(i)}");
+        }
+
+        builder.AppendLine("End of info - - - - - - - - - - - - - - - - - - -");
+        AirportCEONationality.LogDebug(builder.ToString());
     }
 
     private static void FillListWithAirlineFleetInfo(AirlineModelExtended extendedAirlineModel, ref WeightedList<AirlineFleetMember> fleetMembersWeighted)
@@ -387,16 +415,22 @@ class NationalityFlightGenerator : FlightGeneratorBase
 
     private float GetInternationalModifier(Enums.GenericSize airportSize, Enums.GenericSize flightSize, bool isInternational)
     {
-        if (!isInternational)
+        float returnMultiplier;
+        if (AirportCEONationalityConfig.InternationalGenerationMultiplier.Value >= 1)
         {
-            return 1;
+            returnMultiplier = isInternational ? 1 : 1f / AirportCEONationalityConfig.InternationalGenerationMultiplier.Value;
         }
-        if (airportSize.IsSmallerThan(Enums.GenericSize.Large) || flightSize.IsSmallerThan(Enums.GenericSize.Medium))
+        else
         {
-            return 0.75f;
+            returnMultiplier = isInternational ? AirportCEONationalityConfig.InternationalGenerationMultiplier.Value : 1f;
         }
 
-        return 1;
+        if (isInternational && (airportSize.IsSmallerThan(Enums.GenericSize.Large) || flightSize.IsSmallerThan(Enums.GenericSize.Medium)))
+        {
+            returnMultiplier *= 0.75f;
+        }
+
+        return returnMultiplier;
     }
 
     public int SuitabilityForRoute(AirlineFleetMember fleetMember, RouteContainer routeThatIsPossible, bool isInternational, bool forceCargo = false)
