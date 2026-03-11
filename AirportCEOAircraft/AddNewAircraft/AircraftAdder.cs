@@ -1,4 +1,4 @@
-﻿using AirportCEOAircraft.AddNewAircraft.TypeManagers;
+using AirportCEOAircraft.AddNewAircraft.TypeManagers;
 using AirportCEOTweaksCore;
 using System;
 using System.Collections;
@@ -56,6 +56,7 @@ namespace AirportCEOAircraft
                     }
 
                     GeneralAviationManager.HandleGeneralAviation(i, aircraftTypeData);
+                    CopyFromListManager.HandleCopyFromLists(i, aircraftTypeData);
 
                 }
                 yield return null;
