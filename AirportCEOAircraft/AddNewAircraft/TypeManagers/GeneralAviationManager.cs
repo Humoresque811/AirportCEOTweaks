@@ -1,13 +1,13 @@
 ﻿using AirportCEOTweaksCore;
 using System;
 
-namespace AirportCEOAircraft.AddNewAircraft;
+namespace AirportCEOAircraft.AddNewAircraft.TypeManagers;
 
 internal static class GeneralAviationManager
 {
     public static void HandleGeneralAviation(int idIndex, AircraftTypeData aircraftTypeData)
     {
-        if(aircraftTypeData.isGeneralAviation == null)
+        if (aircraftTypeData.isGeneralAviation == null)
         {
             return;
         }
