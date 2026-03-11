@@ -15,7 +15,6 @@ namespace AirportCEOAircraft
         public bool working = true;
 
         private static readonly string aircraftText = "aircraft";
-        private static readonly string helicopterText = "helicopter";
 
         public IEnumerator Initialize()
         {
