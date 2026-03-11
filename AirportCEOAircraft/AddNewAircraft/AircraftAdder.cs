@@ -1,4 +1,4 @@
-﻿using AirportCEOAircraft.AddNewAircraft;
+﻿using AirportCEOAircraft.AddNewAircraft.TypeManagers;
 using AirportCEOTweaksCore;
 using System;
 using System.Collections;
