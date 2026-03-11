@@ -1,4 +1,4 @@
-﻿using AirportCEOAircraft.AddNewAircraft;
+using AirportCEOAircraft.AddNewAircraft.TypeManagers;
 using AirportCEOTweaksCore;
 using System;
 using System.Collections;
@@ -15,7 +15,6 @@ namespace AirportCEOAircraft
         public bool working = true;
 
         private static readonly string aircraftText = "aircraft";
-        private static readonly string helicopterText = "helicopter";
 
         public IEnumerator Initialize()
         {
@@ -56,6 +55,7 @@ namespace AirportCEOAircraft
                     }
 
                     GeneralAviationManager.HandleGeneralAviation(i, aircraftTypeData);
+                    CopyFromListManager.HandleCopyFromLists(i, aircraftTypeData);
 
                 }
                 yield return null;
