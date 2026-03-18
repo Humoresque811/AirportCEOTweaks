@@ -21,7 +21,12 @@ internal static class CopyFromListManager
         AirportCEOAircraft.TweaksLogger.LogDebug($"[CopyFromList] checking supersonics");
         if (TryAddToList(atc.supersonics, copyFrom, newId)) return;
         AirportCEOAircraft.TweaksLogger.LogDebug($"[CopyFromList] checking GAHelicopters");
-        if (TryAddToList(atc.GAHelicopters, copyFrom, newId)) return;
+        if (TryAddToList(atc.GAHelicopters, copyFrom, newId))
+        {
+            // Scheduling/runway logic uses helicopters list, not only GAHelicopters so add it to both lists.
+            TryAddToList(atc.helicopters, copyFrom, newId);
+            return;
+        }
         AirportCEOAircraft.TweaksLogger.LogDebug($"[CopyFromList] checking easterns");
         if (TryAddToList(atc.easterns, copyFrom, newId)) return;
         AirportCEOAircraft.TweaksLogger.LogDebug($"[CopyFromList] checking helicopters");
