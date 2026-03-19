@@ -14,8 +14,6 @@ namespace AirportCEOAircraft
     {
         public bool working = true;
 
-        private static readonly string aircraftText = "aircraft";
-
         public IEnumerator Initialize()
         {
             AirportCEOAircraft.TweaksLogger.LogMessage("Loading Aircrafts!");
@@ -27,9 +25,7 @@ namespace AirportCEOAircraft
             int processedAircraftCount = 1;
             foreach (AircraftTypeData aircraftTypeData in aircraftTypeList)
             {
-                // Ex: "Now loading helicopter H130"
-                // TODO uncomment when working on helicopters
-                AirportCEOAircraft.TweaksLogger.LogInfo($"Now loading {aircraftText} {aircraftTypeData.Id}"); // {(aircraftTypeData.helicopter ? helicopterText : aircraftText)} {aircraftTypeData.Id}");
+                AirportCEOAircraft.TweaksLogger.LogInfo($"Now loading loading: {aircraftTypeData.Id}");
 
                 for (int i = 0; i < aircraftTypeData.id.Length; i++)
                 {

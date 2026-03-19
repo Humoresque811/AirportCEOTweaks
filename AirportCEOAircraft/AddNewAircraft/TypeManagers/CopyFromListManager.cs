@@ -7,6 +7,7 @@ internal static class CopyFromListManager
 {
     public static void HandleCopyFromLists(int idIndex, AircraftTypeData aircraftTypeData)
     {
+        // Used to determine in which lists the aircraft should be added.
         if (string.IsNullOrEmpty(aircraftTypeData.copyFrom))
         {
             return;
@@ -16,25 +17,16 @@ internal static class CopyFromListManager
         var copyFrom = aircraftTypeData.copyFrom;
         var newId = aircraftTypeData.id[idIndex];
 
-        AirportCEOAircraft.TweaksLogger.LogDebug($"[CopyFromList] copyFrom={copyFrom}, newId={newId}");
-
-        AirportCEOAircraft.TweaksLogger.LogDebug($"[CopyFromList] checking supersonics");
         if (TryAddToList(atc.supersonics, copyFrom, newId)) return;
-        AirportCEOAircraft.TweaksLogger.LogDebug($"[CopyFromList] checking GAHelicopters");
         if (TryAddToList(atc.GAHelicopters, copyFrom, newId))
         {
             // Scheduling/runway logic uses helicopters list, not only GAHelicopters so add it to both lists.
             TryAddToList(atc.helicopters, copyFrom, newId);
             return;
         }
-        AirportCEOAircraft.TweaksLogger.LogDebug($"[CopyFromList] checking easterns");
         if (TryAddToList(atc.easterns, copyFrom, newId)) return;
-        AirportCEOAircraft.TweaksLogger.LogDebug($"[CopyFromList] checking helicopters");
         if (TryAddToList(atc.helicopters, copyFrom, newId)) return;
-        AirportCEOAircraft.TweaksLogger.LogDebug($"[CopyFromList] checking vintages");
         if (TryAddToList(atc.vintages, copyFrom, newId)) return;
-
-        AirportCEOAircraft.TweaksLogger.LogDebug($"[CopyFromList] copyFrom={copyFrom} not found in any list so won't be added.");
     }
 
     private static bool TryAddToList(AircraftTypeList list, string copyFrom, string newId)
