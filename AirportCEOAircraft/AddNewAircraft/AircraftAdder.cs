@@ -1,4 +1,4 @@
-﻿using AirportCEOAircraft.AddNewAircraft;
+using AirportCEOAircraft.AddNewAircraft.TypeManagers;
 using AirportCEOTweaksCore;
 using System;
 using System.Collections;
@@ -14,9 +14,6 @@ namespace AirportCEOAircraft
     {
         public bool working = true;
 
-        private static readonly string aircraftText = "aircraft";
-        private static readonly string helicopterText = "helicopter";
-
         public IEnumerator Initialize()
         {
             AirportCEOAircraft.TweaksLogger.LogMessage("Loading Aircrafts!");
@@ -28,9 +25,7 @@ namespace AirportCEOAircraft
             int processedAircraftCount = 1;
             foreach (AircraftTypeData aircraftTypeData in aircraftTypeList)
             {
-                // Ex: "Now loading helicopter H130"
-                // TODO uncomment when working on helicopters
-                AirportCEOAircraft.TweaksLogger.LogInfo($"Now loading {aircraftText} {aircraftTypeData.Id}"); // {(aircraftTypeData.helicopter ? helicopterText : aircraftText)} {aircraftTypeData.Id}");
+                AirportCEOAircraft.TweaksLogger.LogInfo($"Now loading loading: {aircraftTypeData.Id}");
 
                 for (int i = 0; i < aircraftTypeData.id.Length; i++)
                 {
@@ -56,6 +51,7 @@ namespace AirportCEOAircraft
                     }
 
                     GeneralAviationManager.HandleGeneralAviation(i, aircraftTypeData);
+                    CopyFromListManager.HandleCopyFromLists(i, aircraftTypeData);
 
                 }
                 yield return null;
