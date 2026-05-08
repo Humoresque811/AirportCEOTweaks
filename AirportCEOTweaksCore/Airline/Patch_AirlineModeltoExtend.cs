@@ -15,14 +15,10 @@ namespace AirportCEOTweaksCore
 		{
 			if (__instance as AirlineModelExtended != null)
             {
-				//((AirlineModelExtended)__instance).Refresh();
-				return;// true;
+				return;
             }
-			Debug.Log("Patch to extend " + __instance.businessName + " is triggered (ctor)");
+			AirportCEOTweaksCore.LogDebug($"Patch to extend \"{__instance.businessName}\" is triggered (ctor)");
 			__instance.ExtendAirlineModel(ref __instance);
-			//if (__instance as AirlineModelExtended != null) { ((AirlineModelExtended)__instance).Refresh(); return false; }
-			//else { Debug.LogError("AirlineModelExtended turned null before could refresh"); return true; }
-			//return false;
 		}
 
 		[HarmonyPatch("GenerateFlight")]
@@ -32,13 +28,10 @@ namespace AirportCEOTweaksCore
 			if (__instance as AirlineModelExtended != null)
 			{
 				((AirlineModelExtended)__instance).Refresh();
-				return;// true;
+				return;
 			}
 			AirportCEOTweaksCore.LogDebug($"Patch to extend {__instance.businessName} triggered (from Generate Flight)");
 			__instance.ExtendAirlineModel(ref __instance);
-			//if (__instance as AirlineModelExtended != null) { ((AirlineModelExtended)__instance).Refresh(); return false; }
-			//else { Debug.LogError("AirlineModelExtended turned null before could refresh"); return true; }
-			//return false;
 		}
 
 		[HarmonyPatch("GenerateFlight")]

@@ -1,16 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using BepInEx.Logging;
+﻿using AirportCEOModLoader.Core;
 using BepInEx;
 using BepInEx.Configuration;
-using UnityEngine;
-using Unity;
+using BepInEx.Logging;
 using HarmonyLib.Tools;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
 using System.Reflection;
-using AirportCEOModLoader.Core;
+using System.Threading.Tasks;
 using TMPro;
+using Unity;
+using UnityEngine;
 
 namespace AirportCEOTweaksCore
 {
@@ -18,7 +20,7 @@ namespace AirportCEOTweaksCore
     {
         // This block of props are always filled in! They can always safely be used to get the correct information
         private AirlineBusinessData airlineBusinessData { get; set; }
-        public AirlineModel ParentModel { get; private set; }
+        public AirlineModel OldParentModel { get; private set; }
         public Country[] HomeCountries { get; private set; }
         public List<AirlineFleetMember> AirlineFleetMembers { get; private set; }
         //public string[] FleetModels { get; private set; }
@@ -37,7 +39,7 @@ namespace AirportCEOTweaksCore
         }
         public bool StayWithinHomeCountries => airlineBusinessData.remainWithinHomeCodes;
 
-        private bool _shouldGenerateFleet = true;
+        private bool _fleetGenerated = false;
 
         //public Enums.BusinessClass starRank;
         //public float economyTier = 2;
@@ -67,9 +69,10 @@ namespace AirportCEOTweaksCore
                 return;
             }
 
-            ParentModel = airlineModel;
+            OldParentModel = airlineModel;
 
             Singleton<BusinessController>.Instance.RemoveFromBusinessList(this);
+            //Singleton<BusinessController>.Instance.RemoveFromBusinessList(airlineModel);
             ConsumeBaseAirlineModel(airlineModel);
 
             if (Singleton<ModsController>.Instance.airlineBusinessDataByBusinessName.TryGetValue(businessName, out AirlineBusinessData data))
@@ -86,6 +89,7 @@ namespace AirportCEOTweaksCore
             Singleton<BusinessController>.Instance.AddToBusinessList(this);
 
             MakeUpdateFleet();
+            airline.fleet = aircraftFleetModels;
             if (airlineBusinessData.arrayHomeCountryCodes == null || airlineBusinessData.arrayHomeCountryCodes.Length == 0)
             {
                 HomeCountries = CountryRetriever([airline.countryCode]);
@@ -124,24 +128,24 @@ namespace AirportCEOTweaksCore
 
         private void UpdateDefaultFleets(List<(string, int)> fleetAndCounts)
         {
-            ParentModel.aircraftFleetModels = new string[fleetAndCounts.Count];
-            ParentModel.fleetCount = new int[fleetAndCounts.Count];
+            aircraftFleetModels = new string[fleetAndCounts.Count];
+            fleetCount = new int[fleetAndCounts.Count];
             for (int i = 0; i < fleetAndCounts.Count; i++)
             {
                 (string model, int count) = fleetAndCounts[i];
-                ParentModel.aircraftFleetModels[i] = model;
-                ParentModel.fleetCount[i] = count;
+                aircraftFleetModels[i] = model;
+                fleetCount[i] = count;
             }
         }
 
         private void MakeUpdateFleet()
         {
-            if (!_shouldGenerateFleet)
+            if (_fleetGenerated)
             {
                 return; // We've already created
             }
 
-            AirportCEOTweaksCore.LogDebug($"Starting {nameof(MakeUpdateFleet)} for airline \"{ParentModel.businessName}\"");
+            AirportCEOTweaksCore.LogDebug($"Starting {nameof(MakeUpdateFleet)} for airline \"{businessName}\"");
 
             try
             {
@@ -160,47 +164,45 @@ namespace AirportCEOTweaksCore
                         aircraftTypesCounts.Add((airlineBusinessData.tweaksFleet[i], airlineBusinessData.tweaksFleetCount[i]));
                     }
 
-                    _shouldGenerateFleet = false;
+                    _fleetGenerated = true;
                 }
-                else if (ParentModel.aircraftFleetModels.Length == ParentModel.fleetCount.Length)
+                else if (OldParentModel.aircraftFleetModels.Length == OldParentModel.fleetCount.Length)
                 {
-                    for (int i = 0; i < ParentModel.aircraftFleetModels.Length; i++)
+                    for (int i = 0; i < OldParentModel.aircraftFleetModels.Length; i++)
                     {   
-                        if (!AircraftAvailable(ParentModel.aircraftFleetModels[i]))
+                        if (!AircraftAvailable(OldParentModel.aircraftFleetModels[i]))
                         {
                             continue;
                         }
 
-                        aircraftTypesCounts.Add((ParentModel.aircraftFleetModels[i], ParentModel.fleetCount[i]));
+                        aircraftTypesCounts.Add((OldParentModel.aircraftFleetModels[i], OldParentModel.fleetCount[i]));
                     }
-                    _shouldGenerateFleet = false;
+                    _fleetGenerated = true;
                 }
                 else
                 {
-                    AirportCEOTweaksCore.LogError($"No valid source of aircraft fleet/fleet count for airline \"{ParentModel.businessName}\" - size mismatch exists! Creating temporary");
-                    for (int i = 0; i < ParentModel.aircraftFleetModels.Length; i++)
+                    AirportCEOTweaksCore.LogError($"No valid source of aircraft fleet/fleet count for airline \"{businessName}\" - size mismatch exists! Creating temporary");
+                    for (int i = 0; i < OldParentModel.aircraftFleetModels.Length; i++)
                     {   
-                        if (!AircraftAvailable(ParentModel.aircraftFleetModels[i]))
+                        if (!AircraftAvailable(OldParentModel.aircraftFleetModels[i]))
                         {
                             continue;
                         }
 
-                        aircraftTypesCounts.Add((ParentModel.aircraftFleetModels[i], 5)); // using 5 as a generic value!
+                        aircraftTypesCounts.Add((OldParentModel.aircraftFleetModels[i], 5)); // using 5 as a generic value!
                     }
                 }
 
                 UpdateDefaultFleets(aircraftTypesCounts);
-
                 AirlineFleetMembers = new();
-
-                AirportCEOTweaksCore.LogInfo($"c1: {airlineBusinessData.tweaksFleet == null}. l1: {aircraftTypesCounts.Count}");
 
                 foreach ((string model, int count) in aircraftTypesCounts)
                 {
-                    AirlineFleetMember member = new AirlineFleetMember(ParentModel, model, count);
+                    AirlineFleetMember member = new AirlineFleetMember(this, model, count);
 
                     if (member.ErrorFlag)
                     {
+                        AirportCEOTweaksCore.LogError($"AirlineFleetMember \"{model}\" for airline \"{this.businessName}\" failed to generate.");
                         continue;
                     }
 
@@ -212,63 +214,6 @@ namespace AirportCEOTweaksCore
                 AirportCEOTweaksCore.LogError($"Failed to create tweaks fleet. {ExceptionUtils.ProccessException(ex)}");
             }
         }
-
-        //public string GetAndAllocateRandomAircraft(bool allocate = true)
-        //{
-        //    string aircraft;
-        //    SortedDictionary<float, string> lotto = new SortedDictionary<float, string>();
-        //    float counter = 0;
-        //    foreach (string key in AircraftTypeAllocation.Keys)
-        //    {
-        //        if (Singleton<ModsController>.Instance.CanServeAircraftType(key))
-        //        {
-        //            float numToAdd = AircraftTypeAllocation[key].Available + counter;
-        //            lotto.Add(numToAdd, key);
-        //            counter += AircraftTypeAllocation[key].Available;
-        //        }
-        //    }
-
-        //    float pick = Random.Range(0, counter);
-
-        //    foreach (float number in lotto.Keys)
-        //    {
-        //        if (number >= pick)
-        //        {
-        //            aircraft = lotto[number];
-        //            if (allocate) { AircraftTypeAllocation[aircraft] = (AircraftTypeAllocation[aircraft].Available, AircraftTypeAllocation[aircraft].Allocated + 1); }
-        //            return aircraft;
-        //        }
-        //    }
-        //    return "ERROR NO AIRCRAFT AVAILABLE";
-        //}
-        //private void MakeUpdateFleetAllocations()
-        //{
-        //    for (int i = 0; i < aircraftFleetModels.Length ; i++)
-        //    {
-        //        string aircraft = aircraftFleetModels[i];
-        //        float count = (i < fleetCount.Length) ? fleetCount[i] : 0f ;
-        //        if (! AircraftTypeAllocation.ContainsKey(aircraft))
-        //        {
-        //            AircraftTypeAllocation.Add(aircraft, (0, 0));
-        //        }
-        //        AircraftTypeData aTD = AirportCEOTweaksCore.aircraftTypeDataDict[aircraft];
-        //        AircraftTypeAllocation[aircraft] = (aTD.GetAllocationCount() * count, 0);
-        //    }
-        //    foreach (string aircraft in AircraftTypeAllocation.Keys)
-        //    {
-        //        if (! aircraftFleetModels.Contains(aircraft))
-        //        {
-        //            AircraftTypeAllocation.Remove(aircraft);
-        //        }
-        //    }
-        //    foreach (CommercialFlightModel cFM in flightListObjects)
-        //    {
-        //        if (cFM.arrivalTimeDT - Singleton<TimeController>.Instance.GetCurrentContinuousTime() < new TimeSpan(24*AircraftTypeDataUtilities.AllocationBaselineDays, 0, 0)) 
-        //        {
-        //            AircraftTypeAllocation[cFM.aircraftTypeString] = (AircraftTypeAllocation[cFM.aircraftTypeString].Available, AircraftTypeAllocation[cFM.aircraftTypeString].Allocated + 1f);
-        //        }
-        //    }
-        //}
 
         private Country[] CountryRetriever(string[] codes)
         {
@@ -294,7 +239,7 @@ namespace AirportCEOTweaksCore
                 {
                     if (!string.IsNullOrEmpty(code))
                     {
-                        Debug.LogError("ACEO Tweaks | ERROR: In airline " + ParentModel.businessName + " could not get country for counrty code!");
+                        Debug.LogError("ACEO Tweaks | ERROR: In airline " + businessName + " could not get country for counrty code!");
                     }
                 }
             }

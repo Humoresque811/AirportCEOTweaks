@@ -266,15 +266,15 @@ class NationalityFlightGenerator : FlightGeneratorBase
     private static void PrintDebugInfo(AirlineModel model, WeightedList<RouteContainer> routes, RouteContainer flight, AirlineFleetMember member)
     {
         StringBuilder builder = new();
-        builder.Append($"Debug info for the generation of flights for airline \"{model.businessName}\", aircraft \"{member.AircraftName}\" [T-N Log ID 1]: ");
-        builder.AppendLine($"Chosen: Flight to {flight.Airport}, distance {flight.Distance}, with weight {routes.GetWeightOf(flight)}");
+        builder.AppendLine($"Debug info for the generation of flights for airline \"{model.businessName}\", aircraft \"{member.AircraftName}\" (size {member.AircraftSize}, range {member.RangeKM}) [T-N Log ID 1]: ");
+        builder.AppendLine($"Chosen: Flight to {flight.Airport.airportName} size {flight.Airport.paxSize}, distance {flight.Distance}, with weight {routes.GetWeightOf(flight)}");
         
         builder.AppendLine("");
         builder.AppendLine("All options & weights:");
 
         for (int i = 0; i < routes.Count; i++)
         {
-            builder.AppendLine($"Flight to {routes[i].Airport}, distance {routes[i].Distance}km has weight of {routes.GetWeightAtIndex(i)}");
+            builder.AppendLine($"Flight to {routes[i].Airport.airportName} size {routes[i].Airport.paxSize}, distance {routes[i].Distance}, with weight {routes.GetWeightAtIndex(i)}");
         }
 
         builder.AppendLine("End of info - - - - - - - - - - - - - - - - - - -");
@@ -349,19 +349,22 @@ class NationalityFlightGenerator : FlightGeneratorBase
 
     private float GetRangeSuitabilityModifier(float rangeUtilization, Enums.ThreeStepScale weightClass)
     {
+        float currentModifier = 0;
+
         // Don't understand the math? Look at Desmos for graphs: https://www.desmos.com/calculator/jpzbskk7ei
         if (weightClass == Enums.ThreeStepScale.Small)
         {
-            return 0.2f * Mathf.Pow(2, -20 * Mathf.Pow(rangeUtilization - 0.5f, 2)) + 0.8f;
+            currentModifier = 0.3f * Mathf.Pow(2, -20 * Mathf.Pow(rangeUtilization - 0.5f, 2)) + 0.7f;
         }
         else if (weightClass == Enums.ThreeStepScale.Medium)
         {
-            return 0.2f * Mathf.Pow(2, -20 * Mathf.Pow(rangeUtilization - 0.8f, 2)) + 0.8f;
+            currentModifier = 0.3f * Mathf.Pow(2, -20 * Mathf.Pow(rangeUtilization - 0.8f, 2)) + 0.7f;
         }
         else
         {
-            return 0.4f * Mathf.Pow(2, -20 * Mathf.Pow(rangeUtilization - 0.8f, 2)) + 0.6f;
+            currentModifier = 0.5f * Mathf.Pow(2, -20 * Mathf.Pow(rangeUtilization - 0.8f, 2)) + 0.5f;
         }
+        return Mathf.Min(currentModifier, 4 * rangeUtilization);
     }
     private float GetSizeMismatchSuitabilityModifier(Enums.GenericSize airportSize, Enums.GenericSize flightSize, bool isInternational)
     {
