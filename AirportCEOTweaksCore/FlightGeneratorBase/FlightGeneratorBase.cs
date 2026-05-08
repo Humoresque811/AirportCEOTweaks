@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AirportCEOModLoader.Core;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.GlobalIllumination;
@@ -23,7 +24,19 @@ public abstract class FlightGeneratorBase
     // This takes out the usage of the flight model part from GenerateFlightModel(), ensuring more safety and making the purpose of the GenerateFlightModel() method far clearer
     public FlightGeneratorResultAction GenerateFlight(AirlineModel airlineModel, bool isEmergency, bool isAmbulance)
     {
-        GenerateFlightModel(airlineModel, isEmergency, isAmbulance, out FlightGeneratorResults flightGeneratorResults);
+        FlightGeneratorResults flightGeneratorResults = default;
+        try
+        {
+            GenerateFlightModel(airlineModel, isEmergency, isAmbulance, out flightGeneratorResults);
+        }
+        catch (Exception ex)
+        {
+            // Fail safe
+            AirportCEOTweaksCore.LogError($"Flight generation using generator \"{GeneratorName}\" failed!! {ExceptionUtils.ProccessException(ex)}");
+            DialogUtils.QueueDialog($"An error occured during flight generation, while using the \"{GeneratorName}\" generation system. Vanilla generation will be used instead. " +
+                $"If this is a reoccuring issue, contact the mod creator.");
+            return FlightGeneratorResultAction.UseVanillaGeneration;
+        }
 
         if (flightGeneratorResults.action == FlightGeneratorResultAction.AllocateFlights)
         {
@@ -47,7 +60,7 @@ public abstract class FlightGeneratorBase
         {
             if (Singleton<ModsController>.Instance.flightGenerator.GetErrorNote(airlineModel, out string message))
             {
-                AirportCEOModLoader.Core.DialogUtils.QueueDialog(message);
+                DialogUtils.QueueDialog(message);
             }
         }
 
