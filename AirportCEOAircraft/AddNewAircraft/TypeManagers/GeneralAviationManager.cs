@@ -1,13 +1,13 @@
-﻿using AirportCEOTweaksCore;
+using AirportCEOTweaksCore;
 using System;
 
-namespace AirportCEOAircraft.AddNewAircraft;
+namespace AirportCEOAircraft.AddNewAircraft.TypeManagers;
 
 internal static class GeneralAviationManager
 {
     public static void HandleGeneralAviation(int idIndex, AircraftTypeData aircraftTypeData)
     {
-        if(aircraftTypeData.isGeneralAviation == null)
+        if (aircraftTypeData.isGeneralAviation == null)
         {
             return;
         }
@@ -36,32 +36,20 @@ internal static class GeneralAviationManager
         var instance = Singleton<AirTrafficController>.Instance;
         var existingGAAircrafts = instance.GAAircraft.aircraft;
 
-        // newPlane does already exist
+        if (existingGAAircrafts == null)
+        {
+            return new[] { newPlane };
+        }
+
+        // newPlane already exists
         if (Array.Exists(existingGAAircrafts, plane => plane == newPlane))
         {
             return existingGAAircrafts;
         }
 
-        string[] newAircraftList = new string[existingGAAircrafts.Length + 1];
-
-        var index = 0;
-        for (int i = 0; i < existingGAAircrafts.Length; i++)
-        {
-            var existingGaPlane = existingGAAircrafts[i];
-
-            if (existingGaPlane == null || existingGaPlane == newPlane)
-            {
-                continue;
-            }
-
-            newAircraftList[index] = existingGaPlane;
-
-            index++;
-        }
-
-        // Add new GA aircraft
-        newAircraftList[index] = newPlane;
-
+        var newAircraftList = new string[existingGAAircrafts.Length + 1];
+        Array.Copy(existingGAAircrafts, newAircraftList, existingGAAircrafts.Length);
+        newAircraftList[existingGAAircrafts.Length] = newPlane;
         return newAircraftList;
     }
 
@@ -71,40 +59,28 @@ internal static class GeneralAviationManager
         var existingGAAircrafts = instance.GAAircraft.aircraft;
 
         // deletePlane doesn't exist
-        if (!Array.Exists(existingGAAircrafts, plane => plane == deletePlane))
+        if (existingGAAircrafts == null || !Array.Exists(existingGAAircrafts, plane => plane == deletePlane))
         {
             return existingGAAircrafts;
         }
 
-        // existingGAAircraft is empty or after deleting the plane 
-        if (existingGAAircrafts.Length == 0 || existingGAAircrafts.Length - 1 == 0)
+        // After deleting the only plane, list is empty
+        if (existingGAAircrafts.Length == 1)
         {
-            return new string[0];
+            return Array.Empty<string>();
         }
 
-        string[] newAircraftList = new string[existingGAAircrafts.Length - 1];
-
+        var newAircraftList = new string[existingGAAircrafts.Length - 1];
         var index = 0;
-        for (int i = 0; i < existingGAAircrafts.Length; i++)
+        for (var i = 0; i < existingGAAircrafts.Length; i++)
         {
             var existingGaPlane = existingGAAircrafts[i];
-
-            // Skip the aircraft to delete
             if (existingGaPlane == null || existingGaPlane == deletePlane)
             {
                 continue;
             }
-
-            newAircraftList[index] = existingGaPlane;
-            index++;
+            newAircraftList[index++] = existingGaPlane;
         }
-
-        // If the plane to delete was not found, return the original list
-        if (index == existingGAAircrafts.Length)
-        {
-            return existingGAAircrafts; // No deletion occurred
-        }
-
         return newAircraftList;
     }
 }
