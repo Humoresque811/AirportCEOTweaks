@@ -52,13 +52,19 @@ internal static class CopyFromListManager
         // If the template aircraft is not in the list, we won't add the new aircraft
         if (!hasCopyFrom)
         {
-            AirportCEOAircraft.TweaksLogger.LogDebug($"[CopyFromList] template {copyFrom} not in list, skip");
+            if (AirportCEOAircraftConfig.LiveryLogs.Value)
+            {
+                AirportCEOAircraft.TweaksLogger.LogDebug($"[CopyFromList] template {copyFrom} not in list, skip");
+            }
             return false;
         }
 
         if (hasNewId)
         {
-            AirportCEOAircraft.TweaksLogger.LogDebug($"[CopyFromList] {newId} already in list, no add");
+            if (AirportCEOAircraftConfig.LiveryLogs.Value)
+            {
+                AirportCEOAircraft.TweaksLogger.LogDebug($"[CopyFromList] {newId} already in list, no add");
+            }
             return true;
         }
 
@@ -66,7 +72,10 @@ internal static class CopyFromListManager
         Array.Copy(aircraft, newList, aircraft.Length);
         newList[aircraft.Length] = newId;
         list.aircraft = newList;
-        AirportCEOAircraft.TweaksLogger.LogDebug($"[CopyFromList] added {newId} (copyFrom={copyFrom})");
+        if (AirportCEOAircraftConfig.LiveryLogs.Value)
+        {
+            AirportCEOAircraft.TweaksLogger.LogDebug($"[CopyFromList] added {newId} (copyFrom={copyFrom})");
+        }
         return true;
     }
 }

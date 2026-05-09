@@ -45,9 +45,9 @@ namespace AirportCEOAircraft
 
                     aircraftGameObjectsSet.Add(aircraftGameObject);
 
-                    if (!AirportCEOAircraft.aircraftTypeDataDict.ContainsKey(aircraftTypeData.id[i]))
+                    if (!AirportCEOTweaksCore.AirportCEOTweaksCore.aircraftTypeDataDict.ContainsKey(aircraftTypeData.id[i]))
                     {
-                        AirportCEOAircraft.aircraftTypeDataDict.Add(aircraftTypeData.id[i], aircraftTypeData);
+                        AirportCEOTweaksCore.AirportCEOTweaksCore.aircraftTypeDataDict.Add(aircraftTypeData.id[i], aircraftTypeData.SingleAircraftTypeData(aircraftTypeData.id[i]));
                     }
 
                     GeneralAviationManager.HandleGeneralAviation(i, aircraftTypeData);
@@ -234,8 +234,6 @@ namespace AirportCEOAircraft
         {
             GameObject perfCEOGameObject = GameObject.Find("PerformanceCEOActive");
 
-            //Tweaks_PerformanceCEO.RAMReducer.Tweaks_RAMReducerManager.TweaksAircraftCall = true;
-
             string filePath = aircraftTypeData.filePath.Replace("\\", "/");
 
             string[] jsonFiles = Directory.GetFiles(filePath, "*_Visual.json");
@@ -337,10 +335,6 @@ namespace AirportCEOAircraft
                 if (obj == null) { continue; }
                 lac.DoLiveryComponentActions(obj);
             }
-
-
-            //Tweaks_PerformanceCEO.RAMReducer.Tweaks_RAMReducerManager.TweaksAircraftCall = false;
-
 
         }
 
