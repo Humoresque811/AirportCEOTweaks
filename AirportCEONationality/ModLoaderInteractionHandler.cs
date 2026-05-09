@@ -17,7 +17,7 @@ namespace AirportCEONationality
             // More will probably be added!
             AirportCEONationality.LogInfo("Seting up ModLoader interactions");
 
-            WatermarkUtils.Register(new WatermarkInfo("T-N", Assembly.GetExecutingAssembly().GetName().Version.ToString(), true));
+            WatermarkUtils.Register(new WatermarkInfo("T-N", "", true));
             CoroutineEventDispatcher.RegisterToLaunchGamePhase(RouteGenerationController.Instance.Setup, CoroutineEventDispatcher.CoroutineAttachmentType.After);
             CoroutineEventDispatcher.RegisterToLaunchGamePhase(NationalityFlightGenerator.ToggleGeneratorCoroutine, CoroutineEventDispatcher.CoroutineAttachmentType.After);
 
