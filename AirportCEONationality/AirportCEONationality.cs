@@ -7,6 +7,8 @@ using HarmonyLib;
 using System.Reflection;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using AirportCEOTweaksCore;
+using AirportCEOModLoader.Core;
 
 namespace AirportCEONationality
 {
@@ -47,7 +49,27 @@ namespace AirportCEONationality
         private void Start()
         {
             ModLoaderInteractionHandler.SetUpInteractions();
+            TryShowAlert();
             LogInfo("Tweaks Nationality finished start");
+        }
+
+        private void TryShowAlert()
+        {
+            try
+            {
+                Version versionOfCore = AirportCEOTweaksCore.AirportCEOTweaksCore.Instance.Info.Metadata.Version;
+                if (versionOfCore.CompareTo(new Version("3.9.9.0")) < 0)
+                {
+                    DialogUtils.QueueDialog("!! ALERT !!\nYou are using Tweaks Nationality with an old (pre V4) version of Tweaks Core! " +
+                        "This WILL lead to errors! Please update Tweaks Core by either unsubscribing and resubscribing if you own the game " +
+                        "via Steam, or manually updating it from GitHub. ");
+                    TweaksLogger.LogFatal("Tweaks Core is not a pre V4 version!! This will cuase errors.");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError($"Failed to check Tweaks Core version to check for errors. {ExceptionUtils.ProccessException(ex)}");
+            }
         }
 
         // This is code for BepInEx logging, which Tweaks doesn't really use. Here if necessary

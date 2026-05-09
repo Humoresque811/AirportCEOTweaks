@@ -20,8 +20,34 @@ class NationalityFlightGenerator : FlightGeneratorBase
             return false;
         }
 
-        string messageFilled = $"The ACEO Tweaks {GeneratorName} was unable to generate any realistic flights for {model.businessName}. The airline will now offer flights as per the vanilla game. " +
+        bool isVanilla = false;
+        if (model is AirlineModelExtended extendedModel)
+        {
+            isVanilla = !extendedModel.IsCustom;
+        }
+
+        if (isVanilla && hasShownVanillaError)
+        {
+            message = null;
+            return false;
+        }
+        else if (isVanilla)
+        {
+            hasShownVanillaError = true;
+        }
+
+        string messageFilled;
+        if (isVanilla)
+        {
+            messageFilled = $"The ACEO Tweaks {GeneratorName} is unable to generate any realistic flights for all vanilla airlines (for obvious reasons). The airline will now offer flights as " +
+                $"per the vanilla game. If you do not want this, consider canceling the contract.";
+        }
+        else
+        {
+            messageFilled = $"The ACEO Tweaks {GeneratorName} was unable to generate any realistic flights for {model.businessName}. The airline will now offer flights as per the vanilla game. " +
             $"If you do not want this, consider canceling the contract.";
+        }
+
         AirportCEONationality.LogDebug(messageFilled);
         airlinesAlreadyShownError.Add(model.businessName);
 
@@ -36,6 +62,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
     }
 
     private static List<string> airlinesAlreadyShownError = new();
+    private static bool hasShownVanillaError = false;
 
     private static SortedSet<RouteContainer> routesToSearch = new(); // Just to save the memory, no need to constantly reallocate
     private static WeightedList<RouteContainer> finalRouteOptions = new();
@@ -78,18 +105,18 @@ class NationalityFlightGenerator : FlightGeneratorBase
         // Check Possible to Gen a Flight
         if (airlineModel.fleetCount.Length == 0)
         {
-            Debug.LogWarning("ACEO Tweaks | WARN: Generate flight for " + airlineModel.businessName + " failed due to FleetCount.Length==0");
+            AirportCEONationality.LogWarning("ACEO Tweaks | WARN: Generate flight for " + airlineModel.businessName + " failed due to FleetCount.Length==0");
             airlineModel.CancelContract();
-            Debug.LogWarning("ACEO Tweaks | WARN: Airline " + airlineModel.businessName + "contract canceled due to no valid fleet!");
+            AirportCEONationality.LogWarning("ACEO Tweaks | WARN: Airline " + airlineModel.businessName + "contract canceled due to no valid fleet!");
 
             flightGeneratorResults = new(null, failureFallbackGenerationRule);
             return;
         }
         if (airlineModel.aircraftFleetModels.Length == 0)
         {
-            Debug.LogWarning("ACEO Tweaks | WARN: Generate flight for " + airlineModel.businessName + " failed due to FleetModels.Length==0");
+            AirportCEONationality.LogWarning("ACEO Tweaks | WARN: Generate flight for " + airlineModel.businessName + " failed due to FleetModels.Length==0");
             airlineModel.CancelContract();
-            Debug.LogWarning("ACEO Tweaks | WARN: Airline " + airlineModel.businessName + "contract canceled due to no valid fleet!");
+            AirportCEONationality.LogWarning("ACEO Tweaks | WARN: Airline " + airlineModel.businessName + "contract canceled due to no valid fleet!");
 
             flightGeneratorResults = new(null, failureFallbackGenerationRule);
             return;

@@ -17,7 +17,7 @@ namespace AirportCEOTweaksCore
             {
 				return;
             }
-			AirportCEOTweaksCore.LogDebug($"Patch to extend \"{__instance.businessName}\" is triggered (ctor)");
+			//AirportCEOTweaksCore.LogDebug($"Patch to extend \"{__instance.businessName}\" is triggered (ctor)");
 			__instance.ExtendAirlineModel(ref __instance);
 		}
 
@@ -30,7 +30,7 @@ namespace AirportCEOTweaksCore
 				((AirlineModelExtended)__instance).Refresh();
 				return;
 			}
-			AirportCEOTweaksCore.LogDebug($"Patch to extend {__instance.businessName} triggered (from Generate Flight)");
+			//AirportCEOTweaksCore.LogDebug($"Patch to extend {__instance.businessName} triggered (from Generate Flight)");
 			__instance.ExtendAirlineModel(ref __instance);
 		}
 
@@ -45,7 +45,7 @@ namespace AirportCEOTweaksCore
 				return true; // This is to avoid infinite loops with our default fight generator (it has to call this method, but we want to let it execute)
             }
 
-			AirportCEOTweaksCore.LogDebug($"Generating Flight for \"{__instance.businessName}\"");
+			//AirportCEOTweaksCore.LogDebug($"Generating Flight for \"{__instance.businessName}\"");
 			FlightGeneratorResultAction action = Singleton<ModsController>.Instance.flightGenerator.GenerateFlight(__instance, isEmergency, isAmbulance);
 			if (action == FlightGeneratorResultAction.AllocateFlights || action == FlightGeneratorResultAction.AlreadyAllocated) // Full success
             {

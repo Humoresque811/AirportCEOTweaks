@@ -196,7 +196,6 @@ public class RouteGenerationController : MonoBehaviour
 				domesticAirports.Add(airport);
 			}
 		}
-		Debug.Log("ACEO Tweaks | Debug: domesticAirports.count = " + domesticAirports.Count);
 
 		nearAirports = new HashSet<Airport>();
 		foreach (Airport airport in airports)
@@ -221,7 +220,6 @@ public class RouteGenerationController : MonoBehaviour
 
 			nearAirports.Add(airport);
 		}
-		Debug.LogError("ACEO Tweaks | Debug: nearAirports.count = " + nearAirports.Count);
 	}
 
 	public HashSet<RouteContainer> GenerateSomeRouteContainers(int numberToGenerate = 5)

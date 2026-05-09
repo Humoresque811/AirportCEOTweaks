@@ -23,8 +23,6 @@ namespace AirportCEOTweaksCore
         public AirlineModel OldParentModel { get; private set; }
         public Country[] HomeCountries { get; private set; }
         public List<AirlineFleetMember> AirlineFleetMembers { get; private set; }
-        //public string[] FleetModels { get; private set; }
-        //public int[] FleetCounts { get; private set; }
         public int TotalFleetCount
         {
             get
@@ -37,7 +35,9 @@ namespace AirportCEOTweaksCore
                 return total;
             }
         }
+
         public bool StayWithinHomeCountries => airlineBusinessData.remainWithinHomeCodes;
+        public bool IsCustom { get; private set; }
 
         private bool _fleetGenerated = false;
 
@@ -45,8 +45,6 @@ namespace AirportCEOTweaksCore
         //public float economyTier = 2;
         //public HashSet<PAXCommercialFlightModelExtended> myFlights;
         //public float cargoProportion = 0f;
-        //public float maxRange = 0f;
-        //public float minRange = float.MaxValue;
         //private string countryCode;
         //public Country[] forbidCountries;
         //public Dictionary<Airport,float> hUBs;
@@ -98,6 +96,9 @@ namespace AirportCEOTweaksCore
             {
                 HomeCountries = CountryRetriever(airlineBusinessData.arrayHomeCountryCodes);
             }
+
+            IsCustom = airline.isCustom;
+            AirportCEOTweaksCore.LogDebug($"{businessName} is custom {IsCustom}");
         }
 
 
@@ -145,7 +146,7 @@ namespace AirportCEOTweaksCore
                 return; // We've already created
             }
 
-            AirportCEOTweaksCore.LogDebug($"Starting {nameof(MakeUpdateFleet)} for airline \"{businessName}\"");
+            //AirportCEOTweaksCore.LogDebug($"Starting {nameof(MakeUpdateFleet)} for airline \"{businessName}\"");
 
             try
             {

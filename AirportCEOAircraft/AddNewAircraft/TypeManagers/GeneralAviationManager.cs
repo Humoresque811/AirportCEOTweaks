@@ -16,7 +16,10 @@ internal static class GeneralAviationManager
 
         var isGeneralAviation = aircraftTypeData.isGeneralAviation.Length > idIndex ? aircraftTypeData.isGeneralAviation[idIndex] : aircraftTypeData.isGeneralAviation[0];
 
-        AirportCEOAircraft.TweaksLogger.LogMessage($"isGeneralAviation: {isGeneralAviation}. Plane: {aircraftTypeData.id[idIndex]}");
+        if (AirportCEOAircraftConfig.LiveryLogs.Value)
+        {
+            AirportCEOAircraft.TweaksLogger.LogDebug($"isGeneralAviation: {isGeneralAviation}. Plane: {aircraftTypeData.id[idIndex]}");
+        }
 
         var planeName = aircraftTypeData.id[idIndex];
 
