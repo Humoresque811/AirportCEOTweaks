@@ -299,7 +299,7 @@ namespace AirportCEOTweaksCore
         {
 			return AircraftTypeDataCondensed(FlightModel.aircraftTypeString);
         }
-		private static T GetAtIndexOrZero<T>(this T[] array,int index)
+		private static T GetAtIndexOrZero<T>(this T[] array, int index)
         {
 
 			if (array.Length>index)

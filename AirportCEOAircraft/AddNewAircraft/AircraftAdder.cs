@@ -232,37 +232,21 @@ namespace AirportCEOAircraft
 
         private void DoTweaksLiveryBakeIn(GameObject aircraftGameObject, AircraftTypeData aircraftTypeData)
         {
-            GameObject perfCEOGameObject = GameObject.Find("PerformanceCEOActive");
-
             string filePath = aircraftTypeData.filePath.Replace("\\", "/");
 
-            string[] jsonFiles = Directory.GetFiles(filePath, "*_Visual.json");
-            string[] PNGfiles = Directory.GetFiles(filePath, "*.png");
+            string jsonFile = Path.Combine(filePath, aircraftGameObject.name + "_Visual.json");
+            string pngFile = Path.Combine(filePath, aircraftGameObject.name + ".png");
 
-            string[] specificJSONFiles = Directory.GetFiles(filePath, aircraftGameObject.name + "*_Visual.json");
-            string[] specificPNGfiles = Directory.GetFiles(filePath, aircraftGameObject.name + "*.png");
-
-            List<GameObject> componentGameObjects = new List<GameObject>();
-
-            if (jsonFiles.Length == 0 || PNGfiles.Length == 0)
+            if (!FindFilePaths(aircraftGameObject, filePath, ref jsonFile, ref pngFile))
             {
                 return;
             }
 
-            if (specificJSONFiles.Length > 0)
-            {
-                jsonFiles[0] = specificJSONFiles[0];
-            }
-
-            if (specificPNGfiles.Length > 0)
-            {
-                PNGfiles[0] = specificPNGfiles[0];
-            }
-
             GameObject tweaksContainer = new GameObject("tweaksContainer");
+            List<GameObject> componentGameObjects = new List<GameObject>();
 
-            LiveryData liveryData = Utils.CreateFromJSON<LiveryData>(Utils.ReadFile(jsonFiles[0]));
-            byte[] data = File.ReadAllBytes(PNGfiles[0]);
+            LiveryData liveryData = Utils.CreateFromJSON<LiveryData>(Utils.ReadFile(jsonFile));
+            byte[] data = File.ReadAllBytes(pngFile);
             Texture2D texture2D = new Texture2D(2, 2);
             texture2D.LoadImage(data);
 
@@ -336,6 +320,73 @@ namespace AirportCEOAircraft
                 lac.DoLiveryComponentActions(obj);
             }
 
+        }
+
+        // Note this method has a lot of logs and redundancy, but it's useful for clear communication. It trys the speific file path first, then ones with additional parts in the name, then just the first one in there. returns true if anything is found.
+        private static bool FindFilePaths(GameObject aircraftGameObject, string filePath, ref string jsonFile, ref string pngFile)
+        {
+            jsonFile = File.Exists(jsonFile) ? jsonFile : null;
+            if (jsonFile == null)
+            {
+                AirportCEOAircraft.LogWarning($"Failed to find JSON file at specific file path \"{Path.Combine(filePath, aircraftGameObject.name + "_Visual.json")}\" for aircraft \"{aircraftGameObject.name}\"");
+                jsonFile = Directory.GetFiles(filePath, aircraftGameObject.name + "*_Visual.json").OrderBy(f => f, StringComparer.OrdinalIgnoreCase).FirstOrDefault();
+                if (String.IsNullOrEmpty(jsonFile))
+                {
+                    AirportCEOAircraft.LogWarning($"Failed to find JSON file at general file path \"{filePath}\" with {aircraftGameObject.name}*_Visual.json format for aircraft \"{aircraftGameObject.name}\"");
+                }
+                else
+                {
+                    AirportCEOAircraft.LogInfo($"Found JSON for aircraft \"{aircraftGameObject.name}\" at general file path \"{jsonFile}\"");
+                }
+            }
+            if (jsonFile == null)
+            {
+                jsonFile = Directory.GetFiles(filePath, "*_Visual.json").OrderBy(f => f, StringComparer.OrdinalIgnoreCase).FirstOrDefault();
+                if (String.IsNullOrEmpty(jsonFile))
+                {
+                    AirportCEOAircraft.LogWarning($"Failed to find any JSON files in folder file path \"{filePath}\" for aircraft \"{aircraftGameObject.name}\". Aborting livery creation!");
+                    return false;
+                }
+                else
+                {
+                    AirportCEOAircraft.LogInfo($"Found a JSON file for aircraft \"{aircraftGameObject.name}\" at \"{jsonFile}\"");
+                }
+            }
+
+            pngFile = File.Exists(pngFile) ? pngFile : null;
+            string[] possiblePNGFiles = Directory.GetFiles(filePath, "*.png");
+            if (pngFile == null && possiblePNGFiles.Length == 1)
+            {
+                pngFile = possiblePNGFiles[0]; // Frequent pattern that there is only one PNG in the folder, so we can just use it even if it doesn't follow the naming convention.
+            }
+            if (pngFile == null)
+            {
+                AirportCEOAircraft.LogWarning($"Failed to find PNG file at specific file path \"{Path.Combine(filePath, aircraftGameObject.name + ".png")}\" for aircraft \"{aircraftGameObject.name}\", and there is more than one PNG file in the folder.");
+                pngFile = Directory.GetFiles(filePath, aircraftGameObject.name + "*.png").OrderBy(f => f, StringComparer.OrdinalIgnoreCase).FirstOrDefault();
+                if (String.IsNullOrEmpty(pngFile))
+                {
+                    AirportCEOAircraft.LogWarning($"Failed to find PNG file at general file path \"{filePath}\" with {aircraftGameObject.name}*.png format for aircraft \"{aircraftGameObject.name}\"");
+                }
+                else
+                {
+                    AirportCEOAircraft.LogInfo($"Found PNG for aircraft \"{aircraftGameObject.name}\" at general file path \"{pngFile}\"");
+                }
+            }
+            if (pngFile == null)
+            {
+                pngFile = Directory.GetFiles(filePath, "*.png").OrderBy(f => f, StringComparer.OrdinalIgnoreCase).FirstOrDefault();
+                if (String.IsNullOrEmpty(pngFile))
+                {
+                    AirportCEOAircraft.LogWarning($"Failed to find any PNG files in folder file path \"{filePath}\" for aircraft \"{aircraftGameObject.name}\". Aborting livery creation!");
+                    return false;
+                }
+                else
+                {
+                    AirportCEOAircraft.LogInfo($"Found a PNG file for aircraft \"{aircraftGameObject.name}\" at \"{pngFile}\"");
+                }
+            }
+
+            return true;
         }
 
         private static float GetDownscaleFloat()
