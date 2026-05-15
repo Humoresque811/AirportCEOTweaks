@@ -46,13 +46,13 @@ namespace AirportCEOTweaksCore
             }
 
 			//AirportCEOTweaksCore.LogDebug($"Generating Flight for \"{__instance.businessName}\"");
-			FlightGeneratorResultAction action = Singleton<ModsController>.Instance.flightGenerator.GenerateFlight(__instance, isEmergency, isAmbulance);
-			if (action == FlightGeneratorResultAction.AllocateFlights || action == FlightGeneratorResultAction.AlreadyAllocated) // Full success
+			FlightGeneratorAction action = Singleton<ModsController>.Instance.flightGenerator.GenerateFlight(__instance, isEmergency, isAmbulance);
+			if (action == FlightGeneratorAction.AllocateFlights || action == FlightGeneratorAction.AlreadyAllocated) // Full success
             {
 				__result = true; // This matters only if we return false, now we assign it
 				return false;
             }
-			else if (action == FlightGeneratorResultAction.DontCreate) // Dont create, fail
+			else if (action == FlightGeneratorAction.DontCreate) // Dont create, fail
             {
 				__result = false;
 				return false;

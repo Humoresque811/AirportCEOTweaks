@@ -12,9 +12,6 @@ enum NationalityFallbackRule
     [Description("Fallback to vanilla generation")]
     FallbackVanilla,
 
-    [Description("Fallback to vanilla generation & notify")]
-    FallbackVanillaNotify,
-
     [Description("Don't generate")]
     DontGenerate,
 }

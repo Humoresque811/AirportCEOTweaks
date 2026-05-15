@@ -6,14 +6,15 @@ using System.Threading.Tasks;
 
 namespace AirportCEOTweaksCore;
 
-public struct FlightGeneratorResults(List<CommercialFlightModel> commercialFlightModels, FlightGeneratorResultAction action)
+public struct FlightGeneratorResults(List<CommercialFlightModel> commercialFlightModels, FlightGeneratorAction action, bool shouldShowMessage)
 {
     // Wow fancy modern c# syntax
     public List<CommercialFlightModel> commercialFlightModels = commercialFlightModels;
-    public FlightGeneratorResultAction action = action;
+    public FlightGeneratorAction action = action;
+    public bool shouldShowMessage = shouldShowMessage;
 }
 
-public enum FlightGeneratorResultAction
+public enum FlightGeneratorAction
 {
     // This means that the flight generator ...
     AllocateFlights,                    //  has successfully generated flight models, and they should be allocated as normal

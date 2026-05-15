@@ -14,13 +14,10 @@ public class DefaultFlightGenerator : FlightGeneratorBase
 
     public override void GenerateFlightModel(AirlineModel airlineModel, bool isEmergency, bool isAmbulance, out FlightGeneratorResults flightGeneratorResults)
     {
-        //return airlineModel.ExtendAirlineModel(ref airlineModel).GenerateFlight(isEmergency, isAmbulance);
-        Debug.Log("DefaultFlightGeneratorGenerateFlight00");
-
         OverrideHarmonyPrefix = true;
-        bool success = airlineModel.GenerateFlight(isEmergency, isAmbulance);
+        bool _ = airlineModel.GenerateFlight(isEmergency, isAmbulance);
         OverrideHarmonyPrefix = false;
 
-        flightGeneratorResults = new FlightGeneratorResults(null, FlightGeneratorResultAction.AlreadyAllocated);
+        flightGeneratorResults = new FlightGeneratorResults(null, FlightGeneratorAction.AlreadyAllocated, false);
     }
 }

@@ -22,9 +22,9 @@ public abstract class FlightGeneratorBase
     }
 
     // This takes out the usage of the flight model part from GenerateFlightModel(), ensuring more safety and making the purpose of the GenerateFlightModel() method far clearer
-    public FlightGeneratorResultAction GenerateFlight(AirlineModel airlineModel, bool isEmergency, bool isAmbulance)
+    public FlightGeneratorAction GenerateFlight(AirlineModel airlineModel, bool isEmergency, bool isAmbulance)
     {
-        FlightGeneratorResults flightGeneratorResults = default;
+        FlightGeneratorResults flightGeneratorResults;
         try
         {
             GenerateFlightModel(airlineModel, isEmergency, isAmbulance, out flightGeneratorResults);
@@ -35,10 +35,10 @@ public abstract class FlightGeneratorBase
             AirportCEOTweaksCore.LogError($"Flight generation using generator \"{GeneratorName}\" failed!! {ExceptionUtils.ProccessException(ex)}");
             DialogUtils.QueueDialog($"An error occured during flight generation, while using the \"{GeneratorName}\" generation system. Vanilla generation will be used instead. " +
                 $"If this is a reoccuring issue, contact the mod creator.");
-            return FlightGeneratorResultAction.UseVanillaGeneration;
+            return FlightGeneratorAction.UseVanillaGeneration;
         }
 
-        if (flightGeneratorResults.action == FlightGeneratorResultAction.AllocateFlights)
+        if (flightGeneratorResults.action == FlightGeneratorAction.AllocateFlights)
         {
             foreach (CommercialFlightModel flightModel in flightGeneratorResults.commercialFlightModels)
             {
@@ -56,7 +56,7 @@ public abstract class FlightGeneratorBase
             }
         }
 
-        if (flightGeneratorResults.action == FlightGeneratorResultAction.UseVanillaGeneration)
+        if (flightGeneratorResults.shouldShowMessage)
         {
             if (Singleton<ModsController>.Instance.flightGenerator.GetErrorNote(airlineModel, out string message))
             {

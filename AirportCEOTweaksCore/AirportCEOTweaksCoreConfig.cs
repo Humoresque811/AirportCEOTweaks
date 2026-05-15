@@ -11,7 +11,7 @@ public class AirportCEOTweaksCoreConfig
 
     internal static void SetUpConfig()
     {
-        ValidateJsonManual = ConfigRef.Bind("Validating JSON", "Validate JSON Now", false, "Set to true to validate all aircraft JSON files. Will automatically reset to false after validation. Check logs for results!");
+        ValidateJsonManual = ConfigRef.Bind("Validating JSON", "Validate JSON Now", false, SetupAdvancedConfigDescription("Set to true to validate all aircraft JSON files. Will automatically reset to false after validation. Check logs for results!"));
         CustomWorkshopPath = ConfigRef.Bind("Validating JSON", "Custom Workshop Path (only when workshop path is not the default path)", DirectoryHelpers.GetWorkshopPath(), SetupAdvancedConfigDescription("Path to custom workshop directory. If empty, the default workshop path will be used."));
     }
 

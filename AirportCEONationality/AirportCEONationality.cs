@@ -64,6 +64,7 @@ namespace AirportCEONationality
                         "This WILL lead to errors! Please update Tweaks Core by either unsubscribing and resubscribing if you own the game " +
                         "via Steam, or manually updating it from GitHub. ");
                     TweaksLogger.LogFatal("Tweaks Core is not a pre V4 version!! This will cuase errors.");
+                    AirportCEONationalityConfig.EnableNationalityFlightGeneration.Value = false;
                 }
             }
             catch (Exception ex)
