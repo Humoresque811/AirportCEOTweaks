@@ -98,7 +98,7 @@ namespace AirportCEOTweaksCore
             }
 
             IsCustom = airline.isCustom;
-            AirportCEOTweaksCore.LogDebug($"{businessName} is custom {IsCustom}");
+            //AirportCEOTweaksCore.LogDebug($"{businessName} is custom {IsCustom}");
         }
 
 

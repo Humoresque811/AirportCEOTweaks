@@ -5,7 +5,7 @@
     <AssemblyName>AirportCEOFlightLimitTweak</AssemblyName>
 	<Product>AirportCEOFlightLimitTweak</Product>
     <Description></Description>
-	<Version>3.9.9.5</Version>
+	<Version>4.0.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <RestoreAdditionalProjectSources>
@@ -14,6 +14,7 @@
       https://nuget.samboy.dev/v3/index.json
     </RestoreAdditionalProjectSources>
     <Authors>Ezekiel Ward</Authors>
+    <Copyright>© Ezekiel Ward 2026</Copyright>
     <Company />
 	<ComVisible>false</ComVisible>
   </PropertyGroup>

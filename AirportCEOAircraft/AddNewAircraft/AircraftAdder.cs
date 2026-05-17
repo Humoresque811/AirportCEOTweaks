@@ -406,8 +406,8 @@ namespace AirportCEOAircraft
                 case DownscaleEnums.DownscaleLevel.Downscale8X:
                     downscaleAmount = 8; // Not recommended
                     break;
-            }
-            ;
+            };
+
             return downscaleAmount;
         }
 
