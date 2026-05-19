@@ -157,6 +157,11 @@ class NationalityFlightGenerator : FlightGeneratorBase
 
     public void GenerateFlightModelInternal(AirlineModel airlineModel, bool isEmergency, bool isAmbulance, bool ignoreRangeLimits, out FlightGeneratorResults flightGeneratorResults)
     {
+        if (AirportCEONationalityConfig.ExtraDebugLogs.Value)
+        {
+            AirportCEONationality.LogDebug($"Starting generation of flight for airline \"{airlineModel.businessName}\" with ignoreRangeLimits={ignoreRangeLimits}");
+        }
+
         AirlineModelExtended extendedAirlineModel = airlineModel.ExtendAirlineModel(ref airlineModel);
         FlightGeneratorAction failureFallbackGenerationRule = 
             AirportCEONationalityConfig.FallbackGenerationMode.Value == NationalityFallbackRule.DontGenerate ? FlightGeneratorAction.DontCreate : FlightGeneratorAction.UseVanillaGeneration;
@@ -204,13 +209,38 @@ class NationalityFlightGenerator : FlightGeneratorBase
         List<CommercialFlightModel> commercialFlightModels = new();
         if (airlineHomeCountries == null || airlineHomeCountries.Length == 0)
         {
+            if (!airlinesAlreadyShownError.Contains(airlineModel.businessName))
+            {
+                AirportCEONationality.LogWarning($"Generate flight for \"{airlineModel.businessName}\" failed due to no home countries!");
+            }
             flightGeneratorResults = new(null, failureFallbackGenerationRule, true);
             return;
         }
 
         RouteContainer DEBUG_routeContainer = null;
         AirlineFleetMember DEBUG_fleetMember = null;
-        
+
+        if (AirportCEONationalityConfig.ExtraDebugLogs.Value)
+        {
+            AirportCEONationality.LogDebug($"Starting main loop for generation of airline \"{airlineModel.businessName}\"");
+
+            AirlineFleetMember maxRange = fleetMembersWeighted.OrderByDescending(x => x.RangeKM).FirstOrDefault();
+            Airport closestAirportInHomeCountries = null;
+            foreach (Country country in airlineHomeCountries)
+            {
+                foreach (Airport airport in RouteGenerationController.Instance.GetAirportsInCountry(country))
+                {
+                    if (closestAirportInHomeCountries == null || RouteGenerationController.GetDistanceToAirport(airport) < RouteGenerationController.GetDistanceToAirport(closestAirportInHomeCountries))
+                    {
+                        closestAirportInHomeCountries = airport;
+                    }
+                }
+            }
+            AirportCEONationality.LogDebug($"Pre-main loop debug info: Airline=\"{airlineModel.businessName}\", Player airport in {RouteGenerationController.PlayerAirport.CountryName}, " +
+                $"Airline home countries={PrintEnumerable(airlineHomeCountries)}, fleet member with max range is {maxRange.AircraftName} with range {maxRange.RangeKM}km, " +
+                $"closest airport in home countries is {closestAirportInHomeCountries.airportName} with distance {RouteGenerationController.GetDistanceToAirport(closestAirportInHomeCountries)}km");
+        }
+
         // Main loop!
         while (commercialFlightModels.Count == 0)
         {
@@ -232,6 +262,8 @@ class NationalityFlightGenerator : FlightGeneratorBase
             }
 
             routesToSearch.UnionWith(RouteGenerationController.Instance.RouteContainers);
+            routesToSearch.UnionWith(RouteGenerationController.Instance.GetDomesticAirports());
+            routesToSearch.UnionWith(RouteGenerationController.Instance.GetNearAirports());
             if (!playerAirportInHomeCountries) // Add in some big airports from the airlines home country (just in case we dont have any already)
             {
                 foreach (Country country in airlineHomeCountries)
@@ -352,6 +384,19 @@ class NationalityFlightGenerator : FlightGeneratorBase
 
         flightGeneratorResults = new(null, failureFallbackGenerationRule, true);
         return;
+    }
+
+    private static string PrintEnumerable(IEnumerable collection)
+    {
+        StringBuilder builder = new();
+        builder.Append("{");
+        foreach (var item in collection)
+        {
+            builder.Append(item.ToString());
+            builder.Append(", ");
+        }
+        builder.Append("}");
+        return builder.ToString();
     }
 
     private static void PrintDebugInfo(AirlineModel model, WeightedList<RouteContainer> routes, RouteContainer flight, AirlineFleetMember member)

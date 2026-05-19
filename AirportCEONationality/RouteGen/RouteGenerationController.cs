@@ -22,12 +22,12 @@ public class RouteGenerationController : MonoBehaviour
 
 	public static RouteGenerationController Instance { get; private set; }
 
-	Airport PlayerAirport
+	internal static Airport PlayerAirport
         {
-		get
-            {
-			return GameDataController.GetUpdatedPlayerSessionProfileData().playerAirport;
-		}
+			get
+				{
+				return GameDataController.GetUpdatedPlayerSessionProfileData().playerAirport;
+			}
         }
 
 	Dictionary<Enums.GenericSize, HashSet<Airport>> airportsBySize;
@@ -101,6 +101,27 @@ public class RouteGenerationController : MonoBehaviour
 		airportsByCountry[country] = airportResults;
 		return airportResults;
 	}
+
+	public static float GetDistanceToAirport(Airport airport)
+	{
+		return DistanceBetweenAirports(airport, PlayerAirport);
+	}
+
+	public static float DistanceBetweenAirports(Airport airportA, Airport airportB)
+    {
+        return (float)Utils.GetDistanceBetweenCoordinates(airportA.latitude, airportA.longitude, airportB.latitude, airportB.longitude);
+    }
+
+    public HashSet<RouteContainer> GetNearAirports()
+	{
+		return new HashSet<RouteContainer>(nearAirports.Select(airport => new RouteContainer(new Route(airport.id, PlayerAirport.id,
+                    (float)Utils.GetDistanceBetweenCoordinates(airport.latitude, airport.longitude, PlayerAirport.latitude, PlayerAirport.longitude)))));
+    }
+	public HashSet<RouteContainer> GetDomesticAirports()
+    {
+        return new HashSet<RouteContainer>(domesticAirports.Select(airport => new RouteContainer(new Route(airport.id, PlayerAirport.id,
+                    (float)Utils.GetDistanceBetweenCoordinates(airport.latitude, airport.longitude, PlayerAirport.latitude, PlayerAirport.longitude)))));
+    }
 
 	public SortedSet<RouteContainer> GetRoutesToLargeAirportsInCountry(Country country)
 	{
@@ -257,9 +278,9 @@ public class RouteGenerationController : MonoBehaviour
 		for (int i = 0; i < numberToGenerate; i++)
 		{
 			if (canidateAirports.Count <= 0)
-                {
+            {
 				break;
-                }
+            }
 			Airport airport = canidateAirports.ElementAt<Airport>(Random.Range(0, canidateAirports.Count));
 
 			routeContainers.Add(
