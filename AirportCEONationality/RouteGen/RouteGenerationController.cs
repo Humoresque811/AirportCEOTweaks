@@ -1,4 +1,5 @@
 ﻿using AirportCEOModLoader.SaveLoadUtils;
+using AirportCEOTweaksCore;
 using KaimiraGames;
 using System;
 using System.Collections;
@@ -13,7 +14,7 @@ namespace AirportCEONationality;
 
 public class RouteGenerationController : MonoBehaviour
 {
-	private static readonly int LargeAirportsToGenerateInCountry = 10;
+	private static readonly int LargeAirportsToGenerateInCountry = 15;
 
 	private Airport[] airports;
 	private City[] cities;
@@ -123,7 +124,7 @@ public class RouteGenerationController : MonoBehaviour
                     (float)Utils.GetDistanceBetweenCoordinates(airport.latitude, airport.longitude, PlayerAirport.latitude, PlayerAirport.longitude)))));
     }
 
-	public SortedSet<RouteContainer> GetRoutesToLargeAirportsInCountry(Country country)
+	public SortedSet<RouteContainer> GetRoutesToLargerAirportsInCountry(Country country)
 	{
 		if (largeRoutesByCountry.ContainsKey(country))
 		{
@@ -133,6 +134,7 @@ public class RouteGenerationController : MonoBehaviour
 		List<Airport> domesticAirportsInCountry = GetAirportsInCountry(country);
 		WeightedList<RouteContainer> weightedRoutes = new();
 		SortedSet<RouteContainer> result = new();
+
 		if (domesticAirportsInCountry.Count < LargeAirportsToGenerateInCountry)
 		{
 			foreach (Airport airport in domesticAirportsInCountry)
@@ -154,18 +156,24 @@ public class RouteGenerationController : MonoBehaviour
 			switch ((Enums.GenericSize)Math.Min((byte)airport.paxSize, (byte)airport.cargoSize + 1)) // airport sizes as bytes are reversed, so min gets largest of nums
 			{
 				case Enums.GenericSize.Gigantic:
-					weight = 5;
+					weight = 6;
 					break;
 				case Enums.GenericSize.Huge:
-					weight = 5;
+					weight = 6;
 					break;
 				case Enums.GenericSize.VeryLarge:
-					weight = 4;
+					weight = 5;
 					break;
 				case Enums.GenericSize.Large:
-					weight = 3;
+					weight = 4;
 					break;
-				default:
+				case Enums.GenericSize.Medium:
+                    weight = 2;
+                    break;
+				case Enums.GenericSize.Small:
+					weight = 1;
+					break;
+                default:
 					break;	
 			}
 

@@ -47,11 +47,11 @@ class NationalityFlightGenerator : FlightGeneratorBase
         }
         else
         {
-            messageFilled = $"The ACEO Tweaks {GeneratorName} was unable to generate any realistic flights for {model.businessName}. The airline will {submessage}. " +
-            $"If you do not want this, consider canceling the contract.";
+            messageFilled = $"The ACEO Tweaks {GeneratorName} was unable to generate any realistic flights for {model.businessName}{GenerateHomeCountryError(model.businessName)}. " +
+                $"The airline will {submessage}. If you do not want this, consider canceling the contract.";
         }
 
-        AirportCEONationality.LogInfo(messageFilled);
+        AirportCEONationality.LogError(messageFilled);
         airlinesAlreadyShownError.Add(model.businessName);
 
         if (!AirportCEONationalityConfig.ShowWarningWhenFallingBack.Value)
@@ -77,8 +77,19 @@ class NationalityFlightGenerator : FlightGeneratorBase
         }
     }
 
+    private static string GenerateHomeCountryError(string airlineName)
+    {
+        if (!airlinesWithHomeCountryErrors.Contains(airlineName))
+        {
+            return "";
+        }
+
+        return " becuase it lacked or had an incorrect country code";
+    }
+
     private static List<string> airlinesAlreadyShownError = new();
     private static List<string> airlinesAlreadyShownLimitError = new();
+    private static List<string> airlinesWithHomeCountryErrors = new();
     private static bool hasShownVanillaError = false;
 
     private static SortedSet<RouteContainer> routesToSearch = new(); // Just to save the memory, no need to constantly reallocate
@@ -213,6 +224,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
             {
                 AirportCEONationality.LogWarning($"Generate flight for \"{airlineModel.businessName}\" failed due to no home countries!");
             }
+            airlinesWithHomeCountryErrors.Add(airlineModel.businessName);
             flightGeneratorResults = new(null, failureFallbackGenerationRule, true);
             return;
         }
@@ -222,8 +234,6 @@ class NationalityFlightGenerator : FlightGeneratorBase
 
         if (AirportCEONationalityConfig.ExtraDebugLogs.Value)
         {
-            AirportCEONationality.LogDebug($"Starting main loop for generation of airline \"{airlineModel.businessName}\"");
-
             AirlineFleetMember maxRange = fleetMembersWeighted.OrderByDescending(x => x.RangeKM).FirstOrDefault();
             Airport closestAirportInHomeCountries = null;
             foreach (Country country in airlineHomeCountries)
@@ -236,9 +246,9 @@ class NationalityFlightGenerator : FlightGeneratorBase
                     }
                 }
             }
-            AirportCEONationality.LogDebug($"Pre-main loop debug info: Airline=\"{airlineModel.businessName}\", Player airport in {RouteGenerationController.PlayerAirport.CountryName}, " +
-                $"Airline home countries={PrintEnumerable(airlineHomeCountries)}, fleet member with max range is {maxRange.AircraftName} with range {maxRange.RangeKM}km, " +
-                $"closest airport in home countries is {closestAirportInHomeCountries.airportName} with distance {RouteGenerationController.GetDistanceToAirport(closestAirportInHomeCountries)}km");
+            AirportCEONationality.LogDebug($"Pre-main loop debug info for airline \"{airlineModel.businessName}\" [T-N Log ID 2]:\nPlayer airport in {RouteGenerationController.PlayerAirport.CountryName}, " +
+                $"Airline home countries={PrintEnumerable(airlineHomeCountries, c => { return c.countryName; })}, fleet member with max range is {maxRange.AircraftName} with range {maxRange.RangeKM}km, " +
+                $"closest airport in home countries is {closestAirportInHomeCountries.airportName} with distance {(int)RouteGenerationController.GetDistanceToAirport(closestAirportInHomeCountries)}km");
         }
 
         // Main loop!
@@ -268,7 +278,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
             {
                 foreach (Country country in airlineHomeCountries)
                 {
-                    routesToSearch.UnionWith(RouteGenerationController.Instance.GetRoutesToLargeAirportsInCountry(country));
+                    routesToSearch.UnionWith(RouteGenerationController.Instance.GetRoutesToLargerAirportsInCountry(country));
                 }
             }
 
@@ -276,7 +286,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
             {
                 // To airport is *always* us
 
-                if (inboundRoute.Airport.paxSize.IsSmallerThan(fleetMemberToUse.AircraftSize)) 
+                if (inboundRoute.Airport.paxSize.IsSmallerThan(fleetMemberToUse.AircraftSize + 2)) // We allow bigger planes to smaller airports  
                 {
                     continue; // We cannot serve a small airport with a big plane
                 }
@@ -386,15 +396,21 @@ class NationalityFlightGenerator : FlightGeneratorBase
         return;
     }
 
-    private static string PrintEnumerable(IEnumerable collection)
+    private static string PrintEnumerable<T>(IEnumerable<T> collection, Func<T, string> processor)
     {
+        if (collection == null || collection.Count() == 0)
+        {
+            return "{}";
+        }
+
         StringBuilder builder = new();
         builder.Append("{");
-        foreach (var item in collection)
+        foreach (T item in collection)
         {
-            builder.Append(item.ToString());
+            builder.Append(processor(item));
             builder.Append(", ");
         }
+        builder.Length -= 2; // Remove last comma and space
         builder.Append("}");
         return builder.ToString();
     }
@@ -410,7 +426,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
 
         for (int i = 0; i < routes.Count; i++)
         {
-            builder.AppendLine($"Flight to {routes[i].Airport.airportName} size {routes[i].Airport.paxSize}, distance {routes[i].Distance}, with weight {routes.GetWeightAtIndex(i)}");
+            builder.AppendLine($"Flight to {routes[i].Airport.airportName} country {routes[i].Airport.CountryName} size {routes[i].Airport.paxSize}, distance {routes[i].Distance}, with weight {routes.GetWeightAtIndex(i)}");
         }
 
         builder.AppendLine("End of info - - - - - - - - - - - - - - - - - - -");
@@ -499,6 +515,11 @@ class NationalityFlightGenerator : FlightGeneratorBase
         int difference = Math.Abs(airportSize - flightSize);
 
         // Don't understand the math? Look at Desmos for graphs: https://www.desmos.com/calculator/jpzbskk7ei
+        if (airportSize.IsSmallerThan(flightSize))
+        {
+            return Mathf.Max(0, ((flightSize - airportSize) / 4f) + .75f);
+        }
+
         if (!isInternational)
         {
             return -1f / (1 + Mathf.Pow(3, -1f * difference + 3.5f)) + 1;
