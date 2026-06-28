@@ -98,9 +98,12 @@ class NationalityFlightGenerator : FlightGeneratorBase
     }
 
     private static List<string> airlinesAlreadyShownError = new();
-    private static List<string> airlinesAlreadyShownLimitError = new();
     private static List<string> airlinesWithHomeCountryErrors = new();
     private static bool hasShownVanillaError = false;
+
+    private static List<string> airlinesAlreadyShownRangeLimitError = new();
+    private static List<string> airlinesAlreadyShownSizeLimitError = new();
+    private static List<string> airlinesAlreadyShownBothError = new();
 
     private static SortedSet<RouteContainer> routesToSearch = new(); // Just to save the memory, no need to constantly reallocate
     private static WeightedList<RouteContainer> finalRouteOptions = new();
@@ -136,7 +139,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
 
     public override void GenerateFlightModel(AirlineModel airlineModel, bool isEmergency, bool isAmbulance, out FlightGeneratorResults flightGeneratorResults)
     {
-        GenerateFlightModelInternal(airlineModel, isEmergency, isAmbulance, false, out FlightGeneratorResults result);
+        GenerateFlightModelInternal(airlineModel, isEmergency, isAmbulance, false, false, out FlightGeneratorResults result);
 
         if (result.action == FlightGeneratorAction.AllocateFlights || result.action == FlightGeneratorAction.AlreadyAllocated)
         {
@@ -144,43 +147,96 @@ class NationalityFlightGenerator : FlightGeneratorBase
             return;
         }
 
-        if (!AirportCEONationalityConfig.IgnoreRangeLimitsFirst.Value)
-        {
-            flightGeneratorResults = result;
-            return;
-        }
+        FlightGeneratorResults mostRecentResult = result;
 
-        // Now testing ignoring range limits
-        GenerateFlightModelInternal(airlineModel, isEmergency, isAmbulance, true, out FlightGeneratorResults resultIgnoreRange);
-        if (resultIgnoreRange.action == FlightGeneratorAction.AllocateFlights || resultIgnoreRange.action == FlightGeneratorAction.AlreadyAllocated)
+        // Failed default, now we try ingoring limits to see if that works
+
+        if (AirportCEONationalityConfig.IgnoreSizeLimitsFirst.Value)
         {
-            flightGeneratorResults = resultIgnoreRange;
-            flightGeneratorResults.shouldShowMessage = false; // We show this message ourselves below
-            if (airlinesAlreadyShownLimitError.Contains(airlineModel.businessName))
+            GenerateFlightModelInternal(airlineModel, isEmergency, isAmbulance, false, true, out FlightGeneratorResults resultIgnoreSize);
+            if (resultIgnoreSize.action == FlightGeneratorAction.AllocateFlights || resultIgnoreSize.action == FlightGeneratorAction.AlreadyAllocated)
             {
+                flightGeneratorResults = resultIgnoreSize;
+                flightGeneratorResults.shouldShowMessage = false; // We show this message ourselves below
+                if (airlinesAlreadyShownSizeLimitError.Contains(airlineModel.businessName))
+                {
+                    return;
+                }
+
+                // Show message about range limits being ignored, but only once per airline to avoid spam
+                string message = $"The ACEO Tweaks {GeneratorName} was unable to generate any realistic flights for {airlineModel.businessName}, however it could ignoring " +
+                $"airport size limits. The airline will now generate flights without size limits.";
+
+                AirportCEONationality.LogInfo(message);
+                DialogUtils.QueueDialog(message);
+
+                airlinesAlreadyShownSizeLimitError.Add(airlineModel.businessName);
                 return;
             }
-
-            // Show message about range limits being ignored, but only once per airline to avoid spam
-            string message = $"The ACEO Tweaks {GeneratorName} was unable to generate any realistic flights for {airlineModel.businessName}, however it could ignoring " +
-            $"range limits. The airline will now generate flights without range limits.";
-
-            AirportCEONationality.LogInfo(message);
-            DialogUtils.QueueDialog(message);
-
-            airlinesAlreadyShownLimitError.Add(airlineModel.businessName);
-            return;
+            mostRecentResult = resultIgnoreSize;
         }
 
-        flightGeneratorResults = resultIgnoreRange;
+        // Now, either it couldnt generate flights ignoring size limits, or that option is disabled by the user.
+
+        if (AirportCEONationalityConfig.IgnoreRangeLimitsFirst.Value)
+        {
+            GenerateFlightModelInternal(airlineModel, isEmergency, isAmbulance, true, false, out FlightGeneratorResults resultIgnoreRange);
+            if (resultIgnoreRange.action == FlightGeneratorAction.AllocateFlights || resultIgnoreRange.action == FlightGeneratorAction.AlreadyAllocated)
+            {
+                flightGeneratorResults = resultIgnoreRange;
+                flightGeneratorResults.shouldShowMessage = false; // We show this message ourselves below
+                if (airlinesAlreadyShownRangeLimitError.Contains(airlineModel.businessName))
+                {
+                    return;
+                }
+
+                // Show message about range limits being ignored, but only once per airline to avoid spam
+                string message = $"The ACEO Tweaks {GeneratorName} was unable to generate any realistic flights for {airlineModel.businessName}, however it could ignoring " +
+                $"range limits. The airline will now generate flights without range limits.";
+
+                AirportCEONationality.LogInfo(message);
+                DialogUtils.QueueDialog(message);
+
+                airlinesAlreadyShownRangeLimitError.Add(airlineModel.businessName);
+                return;
+            }
+            mostRecentResult = resultIgnoreRange;
+        }
+
+        if (AirportCEONationalityConfig.IgnoreSizeLimitsFirst.Value && AirportCEONationalityConfig.IgnoreRangeLimitsFirst.Value)
+        {
+            GenerateFlightModelInternal(airlineModel, isEmergency, isAmbulance, true, true, out FlightGeneratorResults resultIgnoreBoth);
+            if (resultIgnoreBoth.action == FlightGeneratorAction.AllocateFlights || resultIgnoreBoth.action == FlightGeneratorAction.AlreadyAllocated)
+            {
+                flightGeneratorResults = resultIgnoreBoth;
+                flightGeneratorResults.shouldShowMessage = false; // We show this message ourselves below
+                if (airlinesAlreadyShownBothError.Contains(airlineModel.businessName))
+                {
+                    return;
+                }
+
+                // Show message about range limits being ignored, but only once per airline to avoid spam
+                string message = $"The ACEO Tweaks {GeneratorName} was unable to generate any realistic flights for {airlineModel.businessName}, however it could ignoring " +
+                $"both size and range limits. The airline will now generate flights without size or range limits.";
+
+                AirportCEONationality.LogInfo(message);
+                DialogUtils.QueueDialog(message);
+
+                airlinesAlreadyShownBothError.Add(airlineModel.businessName);
+                return;
+            }
+            mostRecentResult = resultIgnoreBoth;
+        }
+
+        flightGeneratorResults = mostRecentResult;
         return;
     }
 
-    public void GenerateFlightModelInternal(AirlineModel airlineModel, bool isEmergency, bool isAmbulance, bool ignoreRangeLimits, out FlightGeneratorResults flightGeneratorResults)
+    public void GenerateFlightModelInternal(AirlineModel airlineModel, bool isEmergency, bool isAmbulance, bool ignoreRangeLimits, bool ignoreSizeLimits, out FlightGeneratorResults flightGeneratorResults)
     {
         if (AirportCEONationalityConfig.ExtraDebugLogs.Value)
         {
-            AirportCEONationality.LogDebug($"Starting generation of flight for airline \"{airlineModel.businessName}\" with ignoreRangeLimits={ignoreRangeLimits}");
+            AirportCEONationality.LogDebug($"Starting generation of flight for airline \"{airlineModel.businessName}\" with ignoreRangeLimits={ignoreRangeLimits} and ignoreSizeLimits={ignoreSizeLimits}");
         }
 
         AirlineModelExtended extendedAirlineModel = airlineModel.ExtendAirlineModel(ref airlineModel);
@@ -296,7 +352,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
             {
                 // To airport is *always* us
 
-                if (inboundRoute.Airport.paxSize.IsSmallerThan(fleetMemberToUse.AircraftSize + 2)) // We allow bigger planes to smaller airports a little
+                if (inboundRoute.Airport.paxSize.IsSmallerThan(fleetMemberToUse.AircraftSize + 2) && !ignoreSizeLimits) // We allow bigger planes to smaller airports a little
                 {
                     continue; // We cannot serve a tiny airport with a massive plane though
                 }
@@ -310,7 +366,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
                 {
                     if (inboundRoute.VanillaDomestic)
                     {
-                        finalRouteOptions.Add(inboundRoute, SuitabilityForRoute(fleetMemberToUse, inboundRoute, false, ignoreRangeLimits));
+                        finalRouteOptions.Add(inboundRoute, SuitabilityForRoute(fleetMemberToUse, inboundRoute, false, ignoreRangeLimits, ignoreSizeLimits));
                     }
                     else
                     {
@@ -319,7 +375,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
                             continue;
                         }
 
-                        finalRouteOptions.Add(inboundRoute, SuitabilityForRoute(fleetMemberToUse, inboundRoute, true, ignoreRangeLimits));
+                        finalRouteOptions.Add(inboundRoute, SuitabilityForRoute(fleetMemberToUse, inboundRoute, true, ignoreRangeLimits, ignoreSizeLimits));
                     }
                 } 
                 else
@@ -341,7 +397,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
                     }
 
 
-                    finalRouteOptions.Add(inboundRoute, SuitabilityForRoute(fleetMemberToUse, inboundRoute, true, ignoreRangeLimits));
+                    finalRouteOptions.Add(inboundRoute, SuitabilityForRoute(fleetMemberToUse, inboundRoute, true, ignoreRangeLimits, ignoreSizeLimits));
                 }
             }
 
@@ -478,12 +534,12 @@ class NationalityFlightGenerator : FlightGeneratorBase
     }
 
 
-    public int SuitabilityForRoute(AirlineFleetMember fleetMember, RouteContainer routeThatIsPossible, bool isInternational, bool ignoreRangeLimits)
+    public int SuitabilityForRoute(AirlineFleetMember fleetMember, RouteContainer routeThatIsPossible, bool isInternational, bool ignoreRangeLimits, bool ignoreSizeLimits)
     {
         float suitability = 1000;
 
         suitability *= GetRangeSuitabilityModifier(routeThatIsPossible.Distance / fleetMember.RangeKM, fleetMember.AircraftModel.weightClass, ignoreRangeLimits);
-        suitability *= GetSizeMismatchSuitabilityModifier(routeThatIsPossible.Airport.paxSize, fleetMember.AircraftSize, isInternational);
+        suitability *= GetSizeMismatchSuitabilityModifier(routeThatIsPossible.Airport.paxSize, fleetMember.AircraftSize, isInternational, ignoreSizeLimits);
         suitability *= GetEasternModifier(fleetMember, routeThatIsPossible);
         suitability *= GetVintageModifier(fleetMember);
         suitability *= GetInternationalModifier(routeThatIsPossible.Airport.paxSize, fleetMember.AircraftSize, isInternational);
@@ -520,23 +576,40 @@ class NationalityFlightGenerator : FlightGeneratorBase
         return Mathf.Max(3 * Mathf.Pow(.2f, rangeUtilization), 0.05f); 
 
     }
-    private float GetSizeMismatchSuitabilityModifier(Enums.GenericSize airportSize, Enums.GenericSize flightSize, bool isInternational)
+    private float GetSizeMismatchSuitabilityModifier(Enums.GenericSize airportSize, Enums.GenericSize flightSize, bool isInternational, bool ignoreSizeLimits)
     {
         int difference = Math.Abs(airportSize - flightSize);
 
         // Don't understand the math? Look at Desmos for graphs: https://www.desmos.com/calculator/jpzbskk7ei
         if (airportSize.IsSmallerThan(flightSize))
         {
-            return Mathf.Max(0, ((flightSize - airportSize) / 4f) + .75f);
+            if (!ignoreSizeLimits)
+            {
+                return Mathf.Max(0, ((flightSize - airportSize) / 3f) + 1f);
+            }
+            else
+            {
+                return Mathf.Max(0.2f, ((flightSize - airportSize) / 3f) + 1f); // allow all sizes if smaller then
+            }
         }
 
+        float tempResult;
         if (!isInternational)
         {
-            return -1f / (1 + Mathf.Pow(3, -1f * difference + 3.5f)) + 1;
+            tempResult = -1f / (1 + Mathf.Pow(3, -1f * difference + 3.5f)) + 1;
         }
         else
         {
-            return -1f / (1 + Mathf.Pow(3, -1.5f * difference + 3.5f)) + 1;
+            tempResult = -1f / (1 + Mathf.Pow(3, -1.5f * difference + 3.5f)) + 1;
+        }
+
+        if (!ignoreSizeLimits)
+        {
+            return tempResult;
+        }
+        else
+        {
+            return Mathf.Max(tempResult, 0.2f);
         }
     }
 
