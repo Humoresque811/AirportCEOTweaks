@@ -94,7 +94,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
             return "";
         }
 
-        return " becuase it lacked or had an incorrect country code";
+        return " because it lacked or had an incorrect country code";
     }
 
     private static List<string> airlinesAlreadyShownError = new();
