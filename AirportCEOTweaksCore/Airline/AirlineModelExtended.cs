@@ -37,7 +37,7 @@ namespace AirportCEOTweaksCore
         }
 
         public bool StayWithinHomeCountries => airlineBusinessData.remainWithinHomeCodes;
-        public bool IsCustom { get; private set; }
+        public bool IsVanilla => BusinessController.Instance.defaultAirlines.Contains(this.businessName);
 
         private bool _fleetGenerated = false;
 
@@ -96,8 +96,6 @@ namespace AirportCEOTweaksCore
             {
                 HomeCountries = CountryRetriever(airlineBusinessData.arrayHomeCountryCodes);
             }
-
-            IsCustom = airline.isCustom;
             //AirportCEOTweaksCore.LogDebug($"{businessName} is custom {IsCustom}");
         }
 
@@ -137,6 +135,16 @@ namespace AirportCEOTweaksCore
                 aircraftFleetModels[i] = model;
                 fleetCount[i] = count;
             }
+
+            OldParentModel.aircraftFleetModels = new string[fleetAndCounts.Count];
+            OldParentModel.fleetCount = new int[fleetAndCounts.Count];
+            for (int i = 0; i < fleetAndCounts.Count; i++)
+            {
+                (string model, int count) = fleetAndCounts[i];
+                OldParentModel.aircraftFleetModels[i] = model;
+                OldParentModel.fleetCount[i] = count;
+            }
+
         }
 
         private void MakeUpdateFleet()
@@ -146,14 +154,24 @@ namespace AirportCEOTweaksCore
                 return; // We've already created
             }
 
-            //AirportCEOTweaksCore.LogDebug($"Starting {nameof(MakeUpdateFleet)} for airline \"{businessName}\"");
+            if (AirportCEOTweaksCoreConfig.ExtraDebugLogs.Value)
+            {
+                AirportCEOTweaksCore.LogDebug($"Starting {nameof(MakeUpdateFleet)} for airline \"{businessName}\"");
+            }
 
             try
             {
                 List<(string, int)> aircraftTypesCounts = new();
-                bool hasTweaksFleet = airlineBusinessData.tweaksFleet != null && airlineBusinessData.tweaksFleetCount != null && airlineBusinessData.tweaksFleet.Length == airlineBusinessData.tweaksFleetCount.Length;
+                bool hasTweaksFleet = airlineBusinessData.tweaksFleet != null && airlineBusinessData.tweaksFleet.Length > 0;
+                bool hasTweaksFleetCount = airlineBusinessData.tweaksFleetCount != null && airlineBusinessData.tweaksFleetCount.Length > 0;
+                bool equalLength = hasTweaksFleet && hasTweaksFleetCount && airlineBusinessData.tweaksFleet.Length == airlineBusinessData.tweaksFleetCount.Length;
 
-                if (hasTweaksFleet)
+                if (AirportCEOTweaksCoreConfig.ExtraDebugLogs.Value)
+                {
+                    AirportCEOTweaksCore.LogDebug($"hasTweaksFleet: {hasTweaksFleet}, hasTweaksFleetCount: {hasTweaksFleetCount}, equalLength: {equalLength}");
+                }
+                
+                if (hasTweaksFleet && hasTweaksFleetCount && equalLength) // fully good tweaks airline
                 {
                     for (int i = 0; i < airlineBusinessData.tweaksFleet.Length; i++)
                     {   
@@ -167,7 +185,19 @@ namespace AirportCEOTweaksCore
 
                     _fleetGenerated = true;
                 }
-                else if (OldParentModel.aircraftFleetModels.Length == OldParentModel.fleetCount.Length)
+                else if (hasTweaksFleet) // tweaks airline but without tweaks fleet count of proper lenght
+                {
+                    for (int i = 0; i < airlineBusinessData.tweaksFleet.Length; i++)
+                    {
+                        if (!AircraftAvailable(airlineBusinessData.tweaksFleet[i]))
+                        {
+                            continue;
+                        }
+                        aircraftTypesCounts.Add((airlineBusinessData.tweaksFleet[i], 5)); // using 5 as a generic value!
+                    }
+                    _fleetGenerated = true;
+                }
+                else if (OldParentModel.aircraftFleetModels.Length == OldParentModel.fleetCount.Length) // Non tweaks airline
                 {
                     for (int i = 0; i < OldParentModel.aircraftFleetModels.Length; i++)
                     {   
@@ -178,11 +208,9 @@ namespace AirportCEOTweaksCore
 
                         aircraftTypesCounts.Add((OldParentModel.aircraftFleetModels[i], OldParentModel.fleetCount[i]));
                     }
-                    _fleetGenerated = true;
                 }
-                else
+                else // potentially vanilla airline
                 {
-                    AirportCEOTweaksCore.LogError($"No valid source of aircraft fleet/fleet count for airline \"{businessName}\" - size mismatch exists! Creating temporary");
                     for (int i = 0; i < OldParentModel.aircraftFleetModels.Length; i++)
                     {   
                         if (!AircraftAvailable(OldParentModel.aircraftFleetModels[i]))

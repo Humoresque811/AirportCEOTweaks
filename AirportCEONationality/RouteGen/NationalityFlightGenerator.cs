@@ -22,9 +22,14 @@ class NationalityFlightGenerator : FlightGeneratorBase
         }
 
         bool isVanilla = false;
-        if (model is AirlineModelExtended extendedModel)
+        try
         {
-            isVanilla = !extendedModel.IsCustom;
+            AirlineModelExtended extendAirlineModel = model.ExtendAirlineModel(ref model);
+            isVanilla = extendAirlineModel.IsVanilla;
+        }
+        catch (Exception ex)
+        {
+            AirportCEONationality.LogError($"Error while checking if airline {model.businessName} is vanilla. {ExceptionUtils.ProccessException(ex)}");
         }
 
         if (isVanilla && hasShownVanillaError)
@@ -47,7 +52,7 @@ class NationalityFlightGenerator : FlightGeneratorBase
         }
         else
         {
-            messageFilled = $"The ACEO Tweaks {GeneratorName} was unable to generate any realistic flights for {model.businessName}{GenerateHomeCountryError(model.businessName)}. " +
+            messageFilled = $"The ACEO Tweaks {GeneratorName} was unable to generate any realistic flights for airline \"{model.businessName}{GenerateHomeCountryError(model.businessName)}. " +
                 $"The airline will {submessage}. If you do not want this, consider canceling the contract.";
         }
 
@@ -55,6 +60,11 @@ class NationalityFlightGenerator : FlightGeneratorBase
         airlinesAlreadyShownError.Add(model.businessName);
 
         if (!AirportCEONationalityConfig.ShowWarningWhenFallingBack.Value)
+        {
+            message = null;
+            return false;
+        }
+        if (AirportCEONationalityConfig.HideWarningsFromVanillaAirlines.Value && isVanilla)
         {
             message = null;
             return false;
@@ -286,9 +296,9 @@ class NationalityFlightGenerator : FlightGeneratorBase
             {
                 // To airport is *always* us
 
-                if (inboundRoute.Airport.paxSize.IsSmallerThan(fleetMemberToUse.AircraftSize + 2)) // We allow bigger planes to smaller airports  
+                if (inboundRoute.Airport.paxSize.IsSmallerThan(fleetMemberToUse.AircraftSize + 2)) // We allow bigger planes to smaller airports a little
                 {
-                    continue; // We cannot serve a small airport with a big plane
+                    continue; // We cannot serve a tiny airport with a massive plane though
                 }
 
                 if (inboundRoute.Distance > fleetMemberToUse.RangeKM && !ignoreRangeLimits) 

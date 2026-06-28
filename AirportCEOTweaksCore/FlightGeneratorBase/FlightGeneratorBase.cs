@@ -8,6 +8,8 @@ namespace AirportCEOTweaksCore;
 
 public abstract class FlightGeneratorBase
 {
+    protected List<string> airlinesShownError = new();
+
     // This is here to prevent a stack overflow infinite loop with the default flight generator. Keep as false unless specifically needed
     public virtual bool OverrideHarmonyPrefix { get; set; } = false;
 
@@ -33,8 +35,12 @@ public abstract class FlightGeneratorBase
         {
             // Fail safe
             AirportCEOTweaksCore.LogError($"Flight generation using generator \"{GeneratorName}\" failed!! {ExceptionUtils.ProccessException(ex)}");
-            DialogUtils.QueueDialog($"An error occured during flight generation, while using the \"{GeneratorName}\" generation system. Vanilla generation will be used instead. " +
-                $"If this is a reoccuring issue, contact the mod creator.");
+            if (!airlinesShownError.Contains(airlineModel.businessName))
+            {
+                DialogUtils.QueueDialog($"An error occured during flight generation, while using the \"{GeneratorName}\" generation system for airline \"{airlineModel.businessName}\". " +
+                    $"Vanilla generation will be used instead. If this is a reoccuring issue, contact the mod creator.");
+                airlinesShownError.Add(airlineModel.businessName);
+            };
             return FlightGeneratorAction.UseVanillaGeneration;
         }
 
