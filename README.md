@@ -1,15 +1,7 @@
-Before installing ACEO Tweaks, install [ACEO Mod Loader](https://github.com/Humoresque811/AirportCEO-Mod-Loader/wiki).
+In order to use any and all code based mods for AirportCEO, you must have installed the [ACEO Mod Loader](https://github.com/Humoresque811/AirportCEO-Mod-Loader/wiki). If you are new to code based modding, please refer to the linked page for more information.
 
 ---
 
-**Tweaks Core** is required for all submods. It enables sub mods to communicate with each other. It has no fuinstionality without submods.
+If you would like more information on AirportCEO Tweaks or its submods, please refer to the [wiki](https://github.com/Humoresque811/AirportCEOTweaks/wiki) page of this repository. Please note that if you are using Steam and own the game through there, you should not have to do anything or download anything from *this* repository, only the AirportCEO Mod Loader repository - subscribing to AirportCEO Tweaks mods is sufficient. 
 
-Tweaks core may be installed automatically by subscribing to the [steam release](https://steamcommunity.com/sharedfiles/filedetails/?id=3285205669)
-
-Tweaks core can be installed manually from the git release to your ACEO install root folder\plugins. The git release includes all submods, simply delete the .dll for any sub mods you don't want installed.
-
----
-
-* [**Tweaks Aircraft**](https://steamcommunity.com/sharedfiles/filedetails/?id=3285206181) is the first tweaks submod. It enables ACEO to load custom aircraft typed found in the ACEO tweaks aircraft pack, or, in the future, in individual mods. It includes some changes and improvments to the vanilla aircraft fleet that will be required for future mods.
-
-* Future tweaks submods will eventually implimnet all functionality of the original legacy tweaks.
+Thank you for using Tweaks! If you have any questions or would like to contribute, please join the AirportCEO official discord server, and ask in the #modding channel. We will be more than happy to help you. Thanks!
