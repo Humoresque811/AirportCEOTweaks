@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using AirportCEOModLoader.Core;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,9 +27,9 @@ internal class Patch_ContractViewing
         {
             model.ExtendAirlineModel(ref model);
         }
-        catch
+        catch (Exception ex)
         {
-            // We dont care this is just to try and fix the incorrect contract issue!
+            AirportCEOTweaksCore.LogError($"Failed to extend airline upon viewing. This doesnt really effect anything. {ExceptionUtils.ProccessException(ex)}");
         }
     }
 }
