@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.9.34728.123
+# Visual Studio Version 18
+VisualStudioVersion = 18.8.12023.21 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AirportCEOAircraft", "AirportCEOAircraft\AirportCEOAircraft.csproj", "{2BE3A42D-F0E7-45A0-9232-81FC4DF99D3C}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -15,6 +15,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AirportCEONationality", "AirportCEONationality\AirportCEONationality.csproj", "{CB3679A8-C2A9-4875-8B60-9F9EEF600422}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AirportCEOTweaksTests", "AirportCEOTweaksTests\AirportCEOTweaksTests.csproj", "{30FB4D40-01DE-4FCE-AE5A-01823B5D5890}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AirportCEOMailControl", "AirportCEOMailControl\AirportCEOMailControl.csproj", "{572B0DA8-C2DD-56CC-95A5-726D5D7AC498}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -42,14 +44,18 @@ Global
 		{30FB4D40-01DE-4FCE-AE5A-01823B5D5890}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{30FB4D40-01DE-4FCE-AE5A-01823B5D5890}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{30FB4D40-01DE-4FCE-AE5A-01823B5D5890}.Release|Any CPU.Build.0 = Release|Any CPU
+		{572B0DA8-C2DD-56CC-95A5-726D5D7AC498}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{572B0DA8-C2DD-56CC-95A5-726D5D7AC498}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{572B0DA8-C2DD-56CC-95A5-726D5D7AC498}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{572B0DA8-C2DD-56CC-95A5-726D5D7AC498}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		BuildVersion_AssemblyInfoFilename = AirportCEOTweaksCore\DummyAssemblyInfo.cs
-		SolutionGuid = {E2E518B2-8CAF-4DDA-A710-A1C378900D73}
-		BuildVersion_StartDate = 2000/1/1
 		BuildVersion_UseGlobalSettings = True
+		BuildVersion_StartDate = 2000/1/1
+		SolutionGuid = {E2E518B2-8CAF-4DDA-A710-A1C378900D73}
+		BuildVersion_AssemblyInfoFilename = AirportCEOTweaksCore\DummyAssemblyInfo.cs
 	EndGlobalSection
 EndGlobal
