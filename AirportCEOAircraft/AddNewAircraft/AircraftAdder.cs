@@ -246,24 +246,10 @@ namespace AirportCEOAircraft
             List<GameObject> componentGameObjects = new List<GameObject>();
 
             LiveryData liveryData = Utils.CreateFromJSON<LiveryData>(Utils.ReadFile(jsonFile));
-            byte[] data = File.ReadAllBytes(pngFile);
-            Texture2D texture2D = new Texture2D(2, 2);
-            texture2D.LoadImage(data);
+            Texture2D texture2D = GetSpriteSheet(pngFile);
 
             float downscaleAmount = GetDownscaleFloat();
 
-            if (AirportCEOAircraftConfig.DownscaleLevel.Value != DownscaleEnums.DownscaleLevel.Original)
-            {
-                int newX = Utils.RoundToIntLikeANormalPerson((float)texture2D.width / downscaleAmount);
-                int newY = Utils.RoundToIntLikeANormalPerson((float)texture2D.height / downscaleAmount);
-
-                texture2D = DownscaleTexture(texture2D, newX, newY);
-            }
-
-            if (GameSettingManager.CompressImages)
-            {
-                texture2D.Compress(true);
-            }
             LiveryComponent[] liveryComponetArray = liveryData.liveryComponent;
             Sprite[] spriteArray = new Sprite[liveryComponetArray.Length];
             Vector2 lhs = Vector2.zero;
@@ -320,6 +306,48 @@ namespace AirportCEOAircraft
                 lac.DoLiveryComponentActions(obj);
             }
 
+        }
+
+        private static readonly Dictionary<string, Texture2D> spriteSheetCache = new Dictionary<string, Texture2D>();
+        private static string spriteSheetCacheSettings;
+
+        private static Texture2D GetSpriteSheet(string pngFile)
+        {
+            string settings = $"{AirportCEOAircraftConfig.DownscaleLevel.Value}|{GameSettingManager.CompressImages}";
+            if (settings != spriteSheetCacheSettings)
+            {
+                spriteSheetCache.Clear();
+                spriteSheetCacheSettings = settings;
+            }
+
+            string key = Path.GetFullPath(pngFile);
+            if (spriteSheetCache.TryGetValue(key, out Texture2D cachedTexture) && cachedTexture != null)
+            {
+                return cachedTexture;
+            }
+
+            byte[] data = File.ReadAllBytes(pngFile);
+            Texture2D texture2D = new Texture2D(2, 2);
+            texture2D.LoadImage(data);
+
+            if (AirportCEOAircraftConfig.DownscaleLevel.Value != DownscaleEnums.DownscaleLevel.Original)
+            {
+                float downscaleAmount = GetDownscaleFloat();
+                int newX = Utils.RoundToIntLikeANormalPerson((float)texture2D.width / downscaleAmount);
+                int newY = Utils.RoundToIntLikeANormalPerson((float)texture2D.height / downscaleAmount);
+
+                texture2D = DownscaleTexture(texture2D, newX, newY);
+            }
+
+            if (GameSettingManager.CompressImages)
+            {
+                texture2D.Compress(true);
+            }
+
+            texture2D.Apply(false, true);
+
+            spriteSheetCache[key] = texture2D;
+            return texture2D;
         }
 
         // Note this method has a lot of logs and redundancy, but it's useful for clear communication. It trys the speific file path first, then ones with additional parts in the name, then just the first one in there. returns true if anything is found.
