@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using UnityEngine;
 
 namespace AirportCEOAircraft
@@ -59,6 +61,7 @@ namespace AirportCEOAircraft
                 processedAircraftCount++;
             }
 
+            FinishDiskCache();
 
             var ga = atc.GAAircraft.aircraft;
             AirportCEOAircraft.TweaksLogger.LogMessage($"Folowing aircrafts are GA's");
@@ -310,6 +313,12 @@ namespace AirportCEOAircraft
 
         private static readonly Dictionary<string, Texture2D> spriteSheetCache = new Dictionary<string, Texture2D>();
         private static string spriteSheetCacheSettings;
+        private static readonly HashSet<string> usedDiskCacheFiles = new HashSet<string>(StringComparer.Ordinal);
+        private static int sheetsFromDiskCache;
+        private static int sheetsProcessed;
+        private const int DiskCacheVersion = 1;
+
+        private static string DiskCacheFolder => Path.Combine(BepInEx.Paths.CachePath, "AirportCEOTweaksAircraft");
 
         private static Texture2D GetSpriteSheet(string pngFile)
         {
@@ -326,8 +335,18 @@ namespace AirportCEOAircraft
                 return cachedTexture;
             }
 
+            string diskCacheFile = GetDiskCacheFile(key, settings);
+            usedDiskCacheFiles.Add(diskCacheFile);
+            Texture2D texture2D = ReadDiskCache(diskCacheFile);
+            if (texture2D != null)
+            {
+                sheetsFromDiskCache++;
+                spriteSheetCache[key] = texture2D;
+                return texture2D;
+            }
+
             byte[] data = File.ReadAllBytes(pngFile);
-            Texture2D texture2D = new Texture2D(2, 2);
+            texture2D = new Texture2D(2, 2);
             texture2D.LoadImage(data);
 
             if (AirportCEOAircraftConfig.DownscaleLevel.Value != DownscaleEnums.DownscaleLevel.Original)
@@ -344,10 +363,117 @@ namespace AirportCEOAircraft
                 texture2D.Compress(true);
             }
 
+            WriteDiskCache(diskCacheFile, texture2D);
             texture2D.Apply(false, true);
+            sheetsProcessed++;
 
             spriteSheetCache[key] = texture2D;
             return texture2D;
+        }
+
+        private static string GetDiskCacheFile(string pngFile, string settings)
+        {
+            FileInfo info = new FileInfo(pngFile);
+            string id = $"{DiskCacheVersion}|{Application.unityVersion}|{pngFile}|{info.Length}|{info.LastWriteTimeUtc.Ticks}|{settings}";
+            using (MD5 md5 = MD5.Create())
+            {
+                byte[] hash = md5.ComputeHash(Encoding.UTF8.GetBytes(id));
+                return Path.Combine(DiskCacheFolder, BitConverter.ToString(hash).Replace("-", "") + ".texture");
+            }
+        }
+
+        private static Texture2D ReadDiskCache(string diskCacheFile)
+        {
+            if (!File.Exists(diskCacheFile))
+            {
+                return null;
+            }
+
+            Texture2D texture2D = null;
+            try
+            {
+                using (BinaryReader reader = new BinaryReader(File.OpenRead(diskCacheFile)))
+                {
+                    int width = reader.ReadInt32();
+                    int height = reader.ReadInt32();
+                    TextureFormat format = (TextureFormat)reader.ReadInt32();
+                    int mipmapCount = reader.ReadInt32();
+                    int length = reader.ReadInt32();
+                    if (length != reader.BaseStream.Length - reader.BaseStream.Position)
+                    {
+                        throw new InvalidDataException("unexpected file length");
+                    }
+
+                    texture2D = new Texture2D(width, height, format, mipmapCount > 1);
+                    if (texture2D.mipmapCount != mipmapCount)
+                    {
+                        throw new InvalidDataException("unexpected mipmap count");
+                    }
+                    texture2D.LoadRawTextureData(reader.ReadBytes(length));
+                    texture2D.Apply(false, true);
+                    return texture2D;
+                }
+            }
+            catch (Exception ex)
+            {
+                if (texture2D != null)
+                {
+                    Destroy(texture2D);
+                }
+                AirportCEOAircraft.TweaksLogger.LogWarning($"Sprite sheet cache file {diskCacheFile} could not be read and will be rebuilt: {ex.Message}");
+                return null;
+            }
+        }
+
+        private static void WriteDiskCache(string diskCacheFile, Texture2D texture2D)
+        {
+            string tempFile = diskCacheFile + ".tmp";
+            try
+            {
+                byte[] data = texture2D.GetRawTextureData();
+                Directory.CreateDirectory(DiskCacheFolder);
+                using (BinaryWriter writer = new BinaryWriter(File.Create(tempFile)))
+                {
+                    writer.Write(texture2D.width);
+                    writer.Write(texture2D.height);
+                    writer.Write((int)texture2D.format);
+                    writer.Write(texture2D.mipmapCount);
+                    writer.Write(data.Length);
+                    writer.Write(data);
+                }
+                File.Delete(diskCacheFile);
+                File.Move(tempFile, diskCacheFile);
+            }
+            catch (Exception ex)
+            {
+                AirportCEOAircraft.TweaksLogger.LogWarning($"Sprite sheet cache file {diskCacheFile} could not be written: {ex.Message}");
+            }
+        }
+
+        private static void FinishDiskCache()
+        {
+            AirportCEOAircraft.TweaksLogger.LogInfo($"Aircraft sprite sheets: {sheetsFromDiskCache} loaded from the disk cache, {sheetsProcessed} decoded from PNG.");
+            sheetsFromDiskCache = 0;
+            sheetsProcessed = 0;
+
+            try
+            {
+                if (!Directory.Exists(DiskCacheFolder))
+                {
+                    return;
+                }
+                foreach (string file in Directory.GetFiles(DiskCacheFolder))
+                {
+                    if (!usedDiskCacheFiles.Contains(file))
+                    {
+                        File.Delete(file);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AirportCEOAircraft.TweaksLogger.LogWarning($"Unused sprite sheet cache files could not be removed: {ex.Message}");
+            }
         }
 
         // Note this method has a lot of logs and redundancy, but it's useful for clear communication. It trys the speific file path first, then ones with additional parts in the name, then just the first one in there. returns true if anything is found.
