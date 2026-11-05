@@ -1,6 +1,7 @@
 ﻿using AirportCEOModLoader.WatermarkUtils;
 using AirportCEOModLoader.SaveLoadUtils;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -22,9 +23,9 @@ namespace AirportCEOAircraft
             AirportCEOAircraft.LogInfo("Completed ModLoader interactions!");
         }
 
-        internal static void AddCoroutineReference(AircraftAdder aircraftAdder)
+        internal static void AddCoroutineReference(Func<IEnumerator> loadAircraft)
         {
-            CoroutineEventDispatcher.RegisterToLaunchGamePhase(aircraftAdder.Initialize, CoroutineEventDispatcher.CoroutineAttachmentType.Before);
+            CoroutineEventDispatcher.RegisterToLaunchGamePhase(loadAircraft, CoroutineEventDispatcher.CoroutineAttachmentType.Before);
         }
     }
 }
