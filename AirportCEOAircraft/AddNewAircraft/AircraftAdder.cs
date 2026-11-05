@@ -17,6 +17,7 @@ namespace AirportCEOAircraft
         public IEnumerator Initialize()
         {
             AirportCEOAircraft.TweaksLogger.LogMessage("Loading Aircrafts!");
+            AirportCEOAircraft.aircraftPrefabOverwrites.Clear();
 
             List<AircraftTypeData> aircraftTypeList = ProccessAircraftPaths(AirportCEOAircraft.aircraftPaths.ToArray());
             AirTrafficController atc = Singleton<AirTrafficController>.Instance;
