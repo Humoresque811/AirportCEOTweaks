@@ -17,14 +17,22 @@ namespace AirportCEOAircraft
         public IEnumerator Initialize()
         {
             AirportCEOAircraft.TweaksLogger.LogMessage("Loading Aircrafts!");
+            AirportCEOAircraft.aircraftPrefabOverwrites.Clear();
 
             List<AircraftTypeData> aircraftTypeList = ProccessAircraftPaths(AirportCEOAircraft.aircraftPaths.ToArray());
             AirTrafficController atc = Singleton<AirTrafficController>.Instance;
             HashSet<GameObject> aircraftGameObjectsSet = new HashSet<GameObject>();
+            HashSet<string> loadedIds = new HashSet<string>();
 
             int processedAircraftCount = 1;
             foreach (AircraftTypeData aircraftTypeData in aircraftTypeList)
             {
+                if (!loadedIds.Add(aircraftTypeData.Id))
+                {
+                    AirportCEOAircraft.LogWarning($"Skipping \"{aircraftTypeData.filePath}\": aircraft \"{aircraftTypeData.Id}\" was already loaded from another pack");
+                    processedAircraftCount++;
+                    continue;
+                }
                 AirportCEOAircraft.TweaksLogger.LogInfo($"Now loading loading: {aircraftTypeData.Id}");
 
                 for (int i = 0; i < aircraftTypeData.id.Length; i++)
