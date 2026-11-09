@@ -29,6 +29,11 @@ namespace AirportCEOTweaksCore
         {
             //Debug.Log("Entered MakeAirlineModelExtended");
             Airline airline = Singleton<BusinessController>.Instance.GetAirline(me.businessName);
+            if (airline == null)
+            {
+                Debug.LogWarning("ACEO Tweaks | WARN: No available airline named " + me.businessName + ", leaving the airline model unextended");
+                return null;
+            }
             //Debug.Log("MakeAirlineModelExtended airline.name = " + airline.name);
             AirlineModelExtended aa = new AirlineModelExtended(airline, ref me);
             //Debug.Log("MakeAirlineModelExtended aa.name = " + aa.businessName);

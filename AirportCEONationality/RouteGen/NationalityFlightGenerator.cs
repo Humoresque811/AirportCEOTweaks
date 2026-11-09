@@ -243,6 +243,14 @@ class NationalityFlightGenerator : FlightGeneratorBase
         FlightGeneratorAction failureFallbackGenerationRule = 
             AirportCEONationalityConfig.FallbackGenerationMode.Value == NationalityFallbackRule.DontGenerate ? FlightGeneratorAction.DontCreate : FlightGeneratorAction.UseVanillaGeneration;
 
+        if (extendedAirlineModel == null)
+        {
+            AirportCEONationality.LogWarning("Generate flight for " + airlineModel.businessName + " failed because no available airline has that name");
+
+            flightGeneratorResults = new(null, failureFallbackGenerationRule, true);
+            return;
+        }
+
         // Check Possible to Gen a Flight
         if (airlineModel.fleetCount.Length == 0)
         {
